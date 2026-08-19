@@ -1,0 +1,156 @@
+backend:
+  name: github
+  repo: khoand3012/portfolio-site
+  branch: main
+
+# Sveltia CMS can edit the local folder directly (via the browser's File
+# System Access API, Chrome/Edge only) — no proxy server needed. Open
+# /admin/ locally and click "Work with Local Repository" to pick this
+# project folder, no GitHub login required for that mode.
+
+media_folder: "content/uploads"
+public_folder: "/content/uploads"
+
+collections:
+  - name: "portfolio"
+    label: "Portfolio"
+    files:
+      - name: "content"
+        label: "Nội dung trang Portfolio"
+        file: "content/portfolio.json"
+        fields:
+          - label: "Thông tin cá nhân (đầu trang)"
+            name: "hero"
+            widget: "object"
+            fields:
+              - { label: "Họ tên", name: "name", widget: "string" }
+              - { label: "Chữ viết tắt trong avatar", name: "initials", widget: "string" }
+              - { label: "Chức danh", name: "role", widget: "string" }
+              - { label: "Số điện thoại", name: "phone", widget: "string" }
+              - { label: "Email", name: "email", widget: "string" }
+              - { label: "LinkedIn", name: "linkedin", widget: "string" }
+              - { label: "Địa điểm", name: "location", widget: "string" }
+              - { label: "Đoạn giới thiệu", name: "profile", widget: "text" }
+
+          - label: "Các tab nội dung"
+            name: "tabs"
+            widget: "object"
+            fields:
+              - label: "Tab 1 — Teaching"
+                name: "teaching"
+                widget: "object"
+                fields:
+                  - { label: "Tên tab (hiển thị trên thanh menu)", name: "label", widget: "string" }
+                  - { label: "Nhãn nhỏ phía trên tiêu đề", name: "eyebrow", widget: "string" }
+                  - { label: "Tiêu đề", name: "heading", widget: "string" }
+                  - label: "Kinh nghiệm giảng dạy"
+                    name: "jobs"
+                    widget: "list"
+                    fields:
+                      - { label: "Đơn vị", name: "company", widget: "string" }
+                      - { label: "Thời gian", name: "dates", widget: "string" }
+                      - { label: "Vai trò", name: "role", widget: "string", required: false }
+                      - label: "Mô tả công việc (mỗi dòng là 1 gạch đầu dòng)"
+                        name: "bullets"
+                        widget: "list"
+                        field: { label: "Nội dung", name: "item", widget: "string" }
+                  - label: "Đơn vị chưa có nội dung chi tiết"
+                    name: "placeholders"
+                    widget: "list"
+                    fields:
+                      - { label: "Đơn vị", name: "company", widget: "string" }
+                      - { label: "Ghi chú", name: "note", widget: "string" }
+
+              - label: "Tab 2 — International Education"
+                name: "internationalEducation"
+                widget: "object"
+                fields:
+                  - { label: "Tên tab", name: "label", widget: "string" }
+                  - { label: "Nhãn nhỏ phía trên tiêu đề", name: "eyebrow", widget: "string" }
+                  - { label: "Tiêu đề", name: "heading", widget: "string" }
+                  - label: "Kinh nghiệm làm việc"
+                    name: "jobs"
+                    widget: "list"
+                    fields:
+                      - { label: "Đơn vị", name: "company", widget: "string" }
+                      - { label: "Thời gian", name: "dates", widget: "string" }
+                      - { label: "Vai trò", name: "role", widget: "string", required: false }
+                      - label: "Mô tả công việc"
+                        name: "bullets"
+                        widget: "list"
+                        field: { label: "Nội dung", name: "item", widget: "string" }
+                  - { label: "Nhãn nhỏ phần Học vấn", name: "academicEyebrow", widget: "string" }
+                  - { label: "Tiêu đề phần Học vấn", name: "academicHeading", widget: "string" }
+                  - label: "Học vấn"
+                    name: "education"
+                    widget: "list"
+                    fields:
+                      - { label: "Trường", name: "school", widget: "string" }
+                      - { label: "Thời gian", name: "dates", widget: "string" }
+                      - { label: "Bằng cấp", name: "degree", widget: "string" }
+                      - label: "Mô tả"
+                        name: "bullets"
+                        widget: "list"
+                        field: { label: "Nội dung", name: "item", widget: "string" }
+                      - { label: "Tên luận văn (để trống nếu không có)", name: "dissertation", widget: "string", required: false }
+
+              - label: "Tab 3 — English Language Testing and Exams"
+                name: "testing"
+                widget: "object"
+                fields:
+                  - { label: "Tên tab", name: "label", widget: "string" }
+                  - { label: "Nhãn nhỏ phía trên tiêu đề", name: "eyebrow", widget: "string" }
+                  - { label: "Tiêu đề", name: "heading", widget: "string" }
+                  - label: "Chứng chỉ"
+                    name: "certificates"
+                    widget: "list"
+                    fields:
+                      - { label: "Nội dung chứng chỉ", name: "text", widget: "string" }
+                      - { label: "Làm nổi bật (màu mint)", name: "accent", widget: "boolean", default: false }
+                  - label: "Kinh nghiệm liên quan"
+                    name: "jobs"
+                    widget: "list"
+                    fields:
+                      - { label: "Đơn vị / Vai trò", name: "company", widget: "string" }
+                      - { label: "Thời gian", name: "dates", widget: "string" }
+                      - { label: "Vai trò (để trống nếu đã ghi trong Đơn vị)", name: "role", widget: "string", required: false }
+                      - label: "Mô tả công việc"
+                        name: "bullets"
+                        widget: "list"
+                        field: { label: "Nội dung", name: "item", widget: "string" }
+                  - { label: "Ghi chú khi chưa có thêm nội dung", name: "emptyNote", widget: "string" }
+
+              - label: "Tab 4 — Publications"
+                name: "publications"
+                widget: "object"
+                fields:
+                  - { label: "Tên tab", name: "label", widget: "string" }
+                  - { label: "Nhãn nhỏ phía trên tiêu đề", name: "eyebrow", widget: "string" }
+                  - { label: "Tiêu đề", name: "heading", widget: "string" }
+                  - { label: "Ghi chú khi chưa có nội dung", name: "emptyNote", widget: "string" }
+
+              - label: "Tab 5 — Talks/Workshops/Seminars"
+                name: "talks"
+                widget: "object"
+                fields:
+                  - { label: "Tên tab", name: "label", widget: "string" }
+                  - { label: "Nhãn nhỏ phía trên tiêu đề", name: "eyebrow", widget: "string" }
+                  - { label: "Tiêu đề", name: "heading", widget: "string" }
+                  - { label: "Ghi chú khi chưa có nội dung", name: "emptyNote", widget: "string" }
+
+              - label: "Tab 6 — Photos and Videos"
+                name: "media"
+                widget: "object"
+                fields:
+                  - { label: "Tên tab", name: "label", widget: "string" }
+                  - { label: "Nhãn nhỏ phía trên tiêu đề", name: "eyebrow", widget: "string" }
+                  - { label: "Tiêu đề", name: "heading", widget: "string" }
+                  - label: "Ảnh / Video"
+                    name: "items"
+                    widget: "list"
+                    fields:
+                      - { label: "Loại", name: "type", widget: "select", options: ["photo", "video"], default: "photo" }
+                      - { label: "Ảnh (để trống nếu là video và chưa có ảnh thumbnail)", name: "image", widget: "image", required: false }
+                      - { label: "Link video (YouTube/Vimeo — chỉ cần khi Loại = video)", name: "videoUrl", widget: "string", required: false }
+
+          - { label: "Chân trang", name: "footer", widget: "string" }
