@@ -12,8 +12,6 @@
   "tabs": {
     "teaching": {
       "label": "Teaching",
-      "eyebrow": "Teaching",
-      "heading": "Teaching Experience",
       "jobs": [
         {
           "company": "AMES English — Hanoi",
@@ -32,8 +30,6 @@
     },
     "internationalEducation": {
       "label": "International Education",
-      "eyebrow": "International Education",
-      "heading": "International Education Experience",
       "jobs": [
         {
           "company": "University of Huddersfield (UK) — International Office",
@@ -63,8 +59,6 @@
     },
     "testing": {
       "label": "English Language Testing and Exams",
-      "eyebrow": "English Language Testing and Exams",
-      "heading": "Testing & Examination Expertise",
       "certificates": [
         { "text": "IELTS Academic — Overall 8.0 (2025)", "accent": true },
         { "text": "Chinese Proficiency Test — HSK Level 3 (2018)", "accent": false }
@@ -85,8 +79,6 @@
     },
     "academicBackground": {
       "label": "Academic Background",
-      "eyebrow": "Education",
-      "heading": "Academic Background",
       "education": [
         {
           "school": "University of Huddersfield — United Kingdom",
@@ -110,20 +102,14 @@
     },
     "publications": {
       "label": "Publications",
-      "eyebrow": "Publications",
-      "heading": "Publications",
       "emptyNote": "No publications added yet — add articles, papers, or dissertations here (e.g. your MA dissertation \"Mobile Learning Practices in Vietnamese Higher Education Institutions\")."
     },
     "talks": {
       "label": "Talks/Workshops/Seminars",
-      "eyebrow": "Talks / Workshops / Seminars",
-      "heading": "Talks, Workshops & Seminars",
       "emptyNote": "No talks, workshops, or seminars added yet — add speaking engagements, facilitated workshops, or seminars here."
     },
     "media": {
       "label": "Photos and Videos",
-      "eyebrow": "Photos and Videos",
-      "heading": "Photos & Videos",
       "items": [
         { "type": "photo", "image": "", "videoUrl": "" },
         { "type": "photo", "image": "", "videoUrl": "" },

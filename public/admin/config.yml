@@ -51,8 +51,6 @@ collections:
                 widget: "object"
                 fields:
                   - { label: "Tên tab (hiển thị trên thanh menu)", name: "label", widget: "string" }
-                  - { label: "Nhãn nhỏ phía trên tiêu đề", name: "eyebrow", widget: "string" }
-                  - { label: "Tiêu đề", name: "heading", widget: "string" }
                   - label: "Kinh nghiệm giảng dạy"
                     name: "jobs"
                     widget: "list"
@@ -76,8 +74,6 @@ collections:
                 widget: "object"
                 fields:
                   - { label: "Tên tab", name: "label", widget: "string" }
-                  - { label: "Nhãn nhỏ phía trên tiêu đề", name: "eyebrow", widget: "string" }
-                  - { label: "Tiêu đề", name: "heading", widget: "string" }
                   - label: "Kinh nghiệm làm việc"
                     name: "jobs"
                     widget: "list"
@@ -95,8 +91,6 @@ collections:
                 widget: "object"
                 fields:
                   - { label: "Tên tab", name: "label", widget: "string" }
-                  - { label: "Nhãn nhỏ phía trên tiêu đề", name: "eyebrow", widget: "string" }
-                  - { label: "Tiêu đề", name: "heading", widget: "string" }
                   - label: "Chứng chỉ"
                     name: "certificates"
                     widget: "list"
@@ -121,8 +115,6 @@ collections:
                 widget: "object"
                 fields:
                   - { label: "Tên tab", name: "label", widget: "string" }
-                  - { label: "Nhãn nhỏ phía trên tiêu đề", name: "eyebrow", widget: "string" }
-                  - { label: "Tiêu đề", name: "heading", widget: "string" }
                   - label: "Học vấn"
                     name: "education"
                     widget: "list"
@@ -141,8 +133,6 @@ collections:
                 widget: "object"
                 fields:
                   - { label: "Tên tab", name: "label", widget: "string" }
-                  - { label: "Nhãn nhỏ phía trên tiêu đề", name: "eyebrow", widget: "string" }
-                  - { label: "Tiêu đề", name: "heading", widget: "string" }
                   - { label: "Ghi chú khi chưa có nội dung", name: "emptyNote", widget: "string" }
 
               - label: "Tab 6 — Talks/Workshops/Seminars"
@@ -150,8 +140,6 @@ collections:
                 widget: "object"
                 fields:
                   - { label: "Tên tab", name: "label", widget: "string" }
-                  - { label: "Nhãn nhỏ phía trên tiêu đề", name: "eyebrow", widget: "string" }
-                  - { label: "Tiêu đề", name: "heading", widget: "string" }
                   - { label: "Ghi chú khi chưa có nội dung", name: "emptyNote", widget: "string" }
 
               - label: "Tab 7 — Photos and Videos"
@@ -159,8 +147,6 @@ collections:
                 widget: "object"
                 fields:
                   - { label: "Tên tab", name: "label", widget: "string" }
-                  - { label: "Nhãn nhỏ phía trên tiêu đề", name: "eyebrow", widget: "string" }
-                  - { label: "Tiêu đề", name: "heading", widget: "string" }
                   - label: "Ảnh / Video"
                     name: "items"
                     widget: "list"

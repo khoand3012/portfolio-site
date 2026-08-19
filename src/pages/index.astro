@@ -1,124 +1,135 @@
 ---
-import '../styles/global.css';
-import data from '../../content/portfolio.json';
-import Hero from '../components/Hero.astro';
-import TabNav from '../components/TabNav.astro';
-import SectionHeader from '../components/SectionHeader.astro';
-import JobCard from '../components/JobCard.astro';
-import PlaceholderCard from '../components/PlaceholderCard.astro';
-import EducationCard from '../components/EducationCard.astro';
-import GalleryTile from '../components/GalleryTile.astro';
+import "../styles/global.css";
+import data from "../../content/portfolio.json";
+import Hero from "../components/Hero.astro";
+import TabNav from "../components/TabNav.astro";
+import JobCard from "../components/JobCard.astro";
+import PlaceholderCard from "../components/PlaceholderCard.astro";
+import EducationCard from "../components/EducationCard.astro";
+import GalleryTile from "../components/GalleryTile.astro";
 
 // Order + slugs are structural (drive both the nav buttons and the
 // tab-switching script below) — content per tab comes from portfolio.json.
 const TAB_ORDER = [
-  { key: 'teaching', slug: 'teaching' },
-  { key: 'internationalEducation', slug: 'intl-education' },
-  { key: 'testing', slug: 'testing' },
-  { key: 'academicBackground', slug: 'academic-background' },
-  { key: 'publications', slug: 'publications' },
-  { key: 'talks', slug: 'talks' },
-  { key: 'media', slug: 'media' },
+  { key: "teaching", slug: "teaching" },
+  { key: "internationalEducation", slug: "intl-education" },
+  { key: "testing", slug: "testing" },
+  { key: "academicBackground", slug: "academic-background" },
+  { key: "publications", slug: "publications" },
+  { key: "talks", slug: "talks" },
+  { key: "media", slug: "media" },
 ];
 
-const navTabs = TAB_ORDER.map((t) => ({ slug: t.slug, label: data.tabs[t.key].label }));
+const navTabs = TAB_ORDER.map((t) => ({
+  slug: t.slug,
+  label: data.tabs[t.key].label,
+}));
 ---
 
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Truong Nam Nguyen — Portfolio</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap" rel="stylesheet">
-</head>
-<body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Truong Nam Nguyen — Portfolio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <Hero hero={data.hero} />
 
-  <Hero hero={data.hero} />
+    <TabNav tabs={navTabs} />
 
-  <TabNav tabs={navTabs} />
+    <main>
+      <div class="wrap">
+        <section class="tab-panel active" id="tab-teaching">
+          {data.tabs.teaching.jobs.map((job) => <JobCard job={job} />)}
+          {
+            data.tabs.teaching.placeholders.map((item) => (
+              <PlaceholderCard item={item} />
+            ))
+          }
+        </section>
 
-  <main>
-    <div class="wrap">
+        <section class="tab-panel" id="tab-intl-education">
+          {
+            data.tabs.internationalEducation.jobs.map((job) => (
+              <JobCard job={job} />
+            ))
+          }
+        </section>
 
-      <section class="tab-panel active" id="tab-teaching">
-        <SectionHeader eyebrow={data.tabs.teaching.eyebrow} heading={data.tabs.teaching.heading} />
-        {data.tabs.teaching.jobs.map((job) => <JobCard job={job} />)}
-        {data.tabs.teaching.placeholders.map((item) => <PlaceholderCard item={item} />)}
-      </section>
-
-      <section class="tab-panel" id="tab-intl-education">
-        <SectionHeader eyebrow={data.tabs.internationalEducation.eyebrow} heading={data.tabs.internationalEducation.heading} />
-        {data.tabs.internationalEducation.jobs.map((job) => <JobCard job={job} />)}
-      </section>
-
-      <section class="tab-panel" id="tab-testing">
-        <SectionHeader eyebrow={data.tabs.testing.eyebrow} heading={data.tabs.testing.heading} />
-
-        <div class="block-card">
-          <h3 style="margin-bottom: var(--spacing-sm);">Certificates</h3>
-          <div class="tag-row">
-            {data.tabs.testing.certificates.map((cert) => (
-              <span class={`tag${cert.accent ? ' accent' : ''}`}>{cert.text}</span>
-            ))}
+        <section class="tab-panel" id="tab-testing">
+          <div class="block-card">
+            <h3 style="margin-bottom: var(--spacing-sm);">Certificates</h3>
+            <div class="tag-row">
+              {
+                data.tabs.testing.certificates.map((cert) => (
+                  <span class={`tag${cert.accent ? " accent" : ""}`}>
+                    {cert.text}
+                  </span>
+                ))
+              }
+            </div>
           </div>
-        </div>
-        {data.tabs.testing.jobs.map((job) => <JobCard job={job} />)}
+          {data.tabs.testing.jobs.map((job) => <JobCard job={job} />)}
 
-        <div class="placeholder">{data.tabs.testing.emptyNote}</div>
-      </section>
+          <div class="placeholder">{data.tabs.testing.emptyNote}</div>
+        </section>
 
-      <section class="tab-panel" id="tab-academic-background">
-        <SectionHeader eyebrow={data.tabs.academicBackground.eyebrow} heading={data.tabs.academicBackground.heading} />
-        {data.tabs.academicBackground.education.map((ed) => <EducationCard ed={ed} />)}
-      </section>
+        <section class="tab-panel" id="tab-academic-background">
+          {
+            data.tabs.academicBackground.education.map((ed) => (
+              <EducationCard ed={ed} />
+            ))
+          }
+        </section>
 
-      <section class="tab-panel" id="tab-publications">
-        <SectionHeader eyebrow={data.tabs.publications.eyebrow} heading={data.tabs.publications.heading} />
-        <div class="placeholder">{data.tabs.publications.emptyNote}</div>
-      </section>
+        <section class="tab-panel" id="tab-publications">
+          <div class="placeholder">{data.tabs.publications.emptyNote}</div>
+        </section>
 
-      <section class="tab-panel" id="tab-talks">
-        <SectionHeader eyebrow={data.tabs.talks.eyebrow} heading={data.tabs.talks.heading} />
-        <div class="placeholder">{data.tabs.talks.emptyNote}</div>
-      </section>
+        <section class="tab-panel" id="tab-talks">
+          <div class="placeholder">{data.tabs.talks.emptyNote}</div>
+        </section>
 
-      <section class="tab-panel" id="tab-media">
-        <SectionHeader eyebrow={data.tabs.media.eyebrow} heading={data.tabs.media.heading} />
-        <div class="gallery-grid">
-          {data.tabs.media.items.map((item) => <GalleryTile item={item} />)}
-        </div>
-      </section>
+        <section class="tab-panel" id="tab-media">
+          <div class="gallery-grid">
+            {data.tabs.media.items.map((item) => <GalleryTile item={item} />)}
+          </div>
+        </section>
+      </div>
+    </main>
 
-    </div>
-  </main>
+    <footer>
+      <div class="wrap">{data.footer}</div>
+    </footer>
 
-  <footer>
-    <div class="wrap">{data.footer}</div>
-  </footer>
-
-  <script>
-    const buttons = document.querySelectorAll('.tab-btn');
-    const panels = {
-      teaching: document.getElementById('tab-teaching'),
-      'intl-education': document.getElementById('tab-intl-education'),
-      testing: document.getElementById('tab-testing'),
-      'academic-background': document.getElementById('tab-academic-background'),
-      publications: document.getElementById('tab-publications'),
-      talks: document.getElementById('tab-talks'),
-      media: document.getElementById('tab-media'),
-    };
-    buttons.forEach((btn) => {
-      btn.addEventListener('click', () => {
-        buttons.forEach((b) => b.classList.remove('active'));
-        Object.values(panels).forEach((p) => p.classList.remove('active'));
-        btn.classList.add('active');
-        panels[btn.dataset.tab].classList.add('active');
+    <script>
+      const buttons = document.querySelectorAll(".tab-btn");
+      const panels = {
+        teaching: document.getElementById("tab-teaching"),
+        "intl-education": document.getElementById("tab-intl-education"),
+        testing: document.getElementById("tab-testing"),
+        "academic-background": document.getElementById(
+          "tab-academic-background",
+        ),
+        publications: document.getElementById("tab-publications"),
+        talks: document.getElementById("tab-talks"),
+        media: document.getElementById("tab-media"),
+      };
+      buttons.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          buttons.forEach((b) => b.classList.remove("active"));
+          Object.values(panels).forEach((p) => p.classList.remove("active"));
+          btn.classList.add("active");
+          panels[btn.dataset.tab].classList.add("active");
+        });
       });
-    });
-  </script>
-
-</body>
+    </script>
+  </body>
 </html>

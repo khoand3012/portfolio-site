@@ -161,7 +161,7 @@ Update both the version number and the `integrity="sha384-..."` value in
 │   ├── pages/
 │   │   └── index.astro     Imports portfolio.json, composes the page
 │   ├── components/
-│   │   ├── Hero.astro, MetaItem.astro, TabNav.astro, SectionHeader.astro,
+│   │   ├── Hero.astro, MetaItem.astro, TabNav.astro,
 │   │   └── JobCard.astro, PlaceholderCard.astro, EducationCard.astro, GalleryTile.astro
 │   └── styles/
 │       └── global.css      The site's one stylesheet
