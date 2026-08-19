@@ -48,12 +48,54 @@ no-code editor that reads `admin/config.yml` and writes back to
   "Work with Local Repository" to point it at this folder. It edits the
   files on disk directly via the File System Access API — no proxy server,
   no auth.
-- **On the deployed site:** the admin backend is `github`
-  (`admin/config.yml`), which relies on Netlify's built-in OAuth for the
-  `github` backend once this site is deployed there — no extra setup needed
-  (see note on Git Gateway below).
+- **On the deployed site:** login goes through Google sign-in, gated to a
+  specific list of email addresses — see "Editor access (Google sign-in)"
+  below. The editor never needs a GitHub account.
 - After a CMS save, the site needs to be rebuilt. On Netlify this happens
   automatically (see `netlify.toml`).
+
+## Editor access (Google sign-in)
+
+The person editing content doesn't have (or need) a GitHub account. Instead,
+`admin/config.yml` points the CMS at a custom OAuth broker
+(`netlify/functions/auth.mjs` + `callback.mjs`) that:
+
+1. Sends the editor to Google's sign-in screen instead of GitHub's.
+2. Verifies their Google identity (via Google's tokeninfo endpoint) and
+   checks the email against `ALLOWED_EMAILS`.
+3. If it matches, hands the CMS a GitHub token that can write to this one
+   repo — the editor never sees or needs it.
+
+Protocol reference:
+[sveltia-cms-auth](https://github.com/sveltia/sveltia-cms-auth), the
+project's own reference OAuth broker (the same popup/`postMessage` handshake,
+with Google + an email allowlist substituted for GitHub's own OAuth).
+
+**Required environment variables** (set in Netlify → Site settings →
+Environment variables, and in a local `.env` for testing — see
+`.env.example`):
+
+| Variable | What it is |
+|---|---|
+| `GOOGLE_CLIENT_ID` | From a Google Cloud OAuth Client (Web application) |
+| `GOOGLE_CLIENT_SECRET` | From the same OAuth Client |
+| `GITHUB_TOKEN` | A fine-grained GitHub PAT scoped to **only** this repo, Contents: read/write |
+| `ALLOWED_EMAILS` | Comma-separated list of emails allowed to edit, e.g. `a@gmail.com,b@gmail.com` |
+
+The Google OAuth Client's **Authorized redirect URIs** must include, exactly:
+
+```
+https://namtruong0307.netlify.app/api/callback
+http://localhost:8888/api/callback     # for local `netlify dev` testing
+```
+
+**Testing locally:** copy `.env.example` to `.env`, fill in real values, then
+run `netlify dev` and open `http://localhost:8888/admin/`.
+
+To change who can edit, just update `ALLOWED_EMAILS` in Netlify's dashboard
+— no code change or redeploy of the function needed (env var changes do
+require a redeploy to take effect, which Netlify does automatically when you
+save them).
 
 ## Deploying
 
@@ -99,10 +141,17 @@ Update both the version number and the `integrity="sha384-..."` value in
 │   └── index.html     CMS loader page
 ├── content/
 │   └── portfolio.json Editable content — the source of truth
+├── netlify/
+│   ├── functions/
+│   │   ├── auth.mjs      OAuth step 1 — redirects to Google
+│   │   └── callback.mjs  OAuth step 2 — verifies email, returns GitHub token
+│   └── lib/
+│       └── oauth-shared.mjs  Shared helpers for the two functions above
 ├── src/
 │   └── head.html      Static <head> (fonts + CSS), unchanged by content
 ├── build.js            Generates index.html from portfolio.json
 ├── index.html          Generated — do not hand-edit
 ├── netlify.toml         Netlify build config
+├── .env.example         Copy to .env for local testing (never commit .env)
 └── package.json
 ```

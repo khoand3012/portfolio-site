@@ -68,9 +68,30 @@ together.
 `admin/config.yml` uses `backend: name: github`. Do not switch this to
 `git-gateway` — Netlify has deprecated Git Gateway for new setups (Identity
 itself is still supported, but Git Gateway is not recommended going
-forward). The `github` backend works without any of that: once this site
-is hosted on Netlify, Netlify's built-in OAuth for the `github` backend
-handles authentication with no extra proxy or serverless function needed.
+forward).
+
+## Editor auth: Google + allowlist, not GitHub
+
+The content editor has no GitHub account, so `admin/config.yml` does **not**
+use Netlify's default built-in OAuth for the `github` backend. Instead
+`backend.base_url`/`auth_endpoint` point at a custom broker in
+`netlify/functions/auth.mjs` + `callback.mjs`, which gates login behind
+Google sign-in and an `ALLOWED_EMAILS` allowlist, then hands back a
+pre-provisioned `GITHUB_TOKEN` (env var) that the editor never sees. See
+README.md's "Editor access (Google sign-in)" for the full explanation and
+required env vars.
+
+Implications for future changes:
+- If `admin/config.yml`'s `base_url` ever needs to change (e.g. the site
+  moves to a different Netlify subdomain or a custom domain), update it
+  there **and** update the two "Authorized redirect URIs" in the Google
+  Cloud OAuth Client to match — both must agree exactly, on both the
+  production URL and the `localhost:8888` one used for `netlify dev`.
+- Don't remove the CSRF cookie check or the `aud`/`email_verified` checks in
+  `callback.mjs` as a "simplification" — they're what stop a forged request
+  from getting a valid GitHub write token.
+- To change who can edit, only `ALLOWED_EMAILS` needs to change (in
+  Netlify's env var settings) — no code change.
 
 ## Design tokens are fixed
 

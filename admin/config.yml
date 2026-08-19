@@ -2,6 +2,12 @@ backend:
   name: github
   repo: khoand3012/portfolio-site
   branch: main
+  # Custom OAuth broker (netlify/functions/auth.mjs + callback.mjs) instead of
+  # Netlify's default GitHub OAuth: it gates login behind Google sign-in + an
+  # email allowlist (ALLOWED_EMAILS), so the editor never needs a GitHub
+  # account. See README.md "Editor access (Google sign-in)".
+  base_url: https://namtruong0307.netlify.app
+  auth_endpoint: api/auth
 
 # Sveltia CMS can edit the local folder directly (via the browser's File
 # System Access API, Chrome/Edge only) — no proxy server needed. Open
