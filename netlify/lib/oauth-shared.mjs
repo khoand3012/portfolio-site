@@ -7,24 +7,40 @@
 // Only backend this broker serves — must match `backend.name` in admin/config.yml.
 export const PROVIDER = 'github';
 
-function serializeContent(content) {
-  return JSON.stringify(content).replaceAll('<', '\\u003c');
+// The only origins a token may ever be relayed to. Without this check, any
+// page could open our popup, wait for a legitimate editor to sign in inside
+// it, then echo back the handshake message itself to steal the resulting
+// GitHub token (the popup can't otherwise tell a genuine CMS opener from an
+// attacker's window — see the message listener below). Keep this in sync
+// with admin/config.yml's backend.base_url and the Google OAuth Client's
+// Authorized redirect URIs if this site's domain ever changes.
+const TRUSTED_ORIGINS = ['https://namtruong0307.netlify.app', 'http://localhost:8888'];
+
+function serialize(value) {
+  return JSON.stringify(value).replaceAll('<', '\\u003c');
 }
 
 // Renders the popup's response page. It performs the two-way postMessage
 // handshake the CMS expects: wait for the opener to echo "authorizing:github"
-// (which also reveals the opener's real, browser-verified origin), then reply
-// with the final "authorization:github:success:{...}" (or ":error:{...}") message
-// to that exact origin only.
+// (which also reveals the opener's real, browser-verified origin — origin on
+// a message event is set by the browser itself and can't be forged by the
+// sender), then reply with the final "authorization:github:success:{...}"
+// (or ":error:{...}") message — but only if that origin is one of ours, and
+// only when the payload actually carries a token. Errors carry no secret, so
+// they're relayed regardless, to keep the sign-in screen informative.
 export function outputHtml({ token, error, errorCode } = {}) {
   const state = error ? 'error' : 'success';
   const content = error ? { provider: PROVIDER, error, errorCode } : { provider: PROVIDER, token };
+  const hasToken = Boolean(token);
 
   const html = `<!doctype html><html><body><script>
 (() => {
+  const trustedOrigins = ${serialize(TRUSTED_ORIGINS)};
+  const hasToken = ${serialize(hasToken)};
   window.addEventListener('message', ({ data, origin }) => {
     if (data !== 'authorizing:${PROVIDER}') return;
-    window.opener?.postMessage('authorization:${PROVIDER}:${state}:${serializeContent(content)}', origin);
+    if (hasToken && !trustedOrigins.includes(origin)) return;
+    window.opener?.postMessage('authorization:${PROVIDER}:${state}:${serialize(content)}', origin);
   });
   window.opener?.postMessage('authorizing:${PROVIDER}', '*');
 })();
