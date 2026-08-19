@@ -18,8 +18,8 @@ backend:
 # /admin/ locally and click "Work with Local Repository" to pick this
 # project folder, no GitHub login required for that mode.
 
-media_folder: "content/uploads"
-public_folder: "/content/uploads"
+media_folder: "public/uploads"
+public_folder: "/uploads"
 
 collections:
   - name: "portfolio"

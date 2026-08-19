@@ -4,6 +4,11 @@
   "version": "1.0.0",
   "description": "Truong Nam Nguyen portfolio — static site generated from content/portfolio.json",
   "scripts": {
-    "build": "node build.js"
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "astro": "^7.2.3"
   }
 }

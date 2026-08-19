@@ -1,29 +1,36 @@
 # Portfolio Site
 
-A single-page CV/portfolio site, built as plain static HTML with a small
-JSON-driven build step and a no-code admin panel for editing content.
+A single-page CV/portfolio site, built with [Astro](https://astro.build) as
+plain static HTML (no client-side framework shipped), driven by one JSON
+content file, with a no-code admin panel for editing that content.
 
 ## How it works
 
 ```
-content/portfolio.json   ← all editable text (source of truth)
+content/portfolio.json      ← all editable text (source of truth)
         │
-        │  node build.js
+        │  npm run build  (astro build)
         ▼
-    index.html            ← generated static page (safe to open directly, good for SEO)
+src/pages/index.astro       ← imports the JSON, composes components
+src/components/*.astro      ← Hero, TabNav, JobCard, EducationCard, GalleryTile, ...
+        │
+        ▼
+    dist/index.html         ← generated static page — do not hand-edit, do not commit
 ```
 
 - `content/portfolio.json` holds every piece of text on the page: hero info,
-  the six tabs (Teaching, International Education, Testing, Publications,
-  Talks, Photos & Videos), job entries, education, certificates, gallery
-  items.
-- `src/head.html` is the static `<head>` (fonts + all CSS). It never changes
-  based on content.
-- `build.js` is a dependency-free Node script that reads the JSON, escapes
-  it, and writes a plain `index.html`. No client-side fetch, no framework —
-  the deployed page is real static HTML.
-- `index.html` is a **generated file**. Don't hand-edit it — edit
-  `content/portfolio.json` and rebuild instead.
+  the seven tabs (Teaching, International Education, Testing, Academic
+  Background, Publications, Talks, Photos & Videos), job entries, education,
+  certificates, gallery items.
+- `src/pages/index.astro` imports that JSON directly and renders the page by
+  composing small components in `src/components/`. Astro auto-escapes
+  `{expression}` interpolations (like JSX), so there's no manual HTML-escaping
+  code to maintain.
+- `src/styles/global.css` is the site's one stylesheet (colors, typography,
+  layout) — imported once by `index.astro`, not scoped per component.
+- `dist/` is Astro's **generated build output** (gitignored). Don't hand-edit
+  anything in it — edit `content/portfolio.json` or the components instead,
+  then rebuild.
 
 ## Editing content
 
@@ -32,16 +39,20 @@ content/portfolio.json   ← all editable text (source of truth)
 Edit `content/portfolio.json`, then run:
 
 ```sh
-node build.js
+npm run build      # writes dist/index.html
+npm run preview    # serves dist/ locally to check it
 ```
 
-and open `index.html` in a browser to check it.
+or `npm run dev` for a live-reloading dev server while iterating on the
+`.astro` components themselves.
 
 **Option B — use the admin panel (for non-technical editors)**
 
-`admin/` wires up [Sveltia CMS](https://sveltiacms.app), a form-based
-no-code editor that reads `admin/config.yml` and writes back to
-`content/portfolio.json`.
+`public/admin/` wires up [Sveltia CMS](https://sveltiacms.app), a form-based
+no-code editor that reads `public/admin/config.yml` and writes back to
+`content/portfolio.json`. (It lives under `public/` so Astro copies it into
+`dist/admin/` untouched, as plain static files — Sveltia isn't part of the
+Astro build itself.)
 
 - **Locally, with no GitHub login:** serve the folder (e.g. `npx serve` or
   `python3 -m http.server`), open `/admin/` in Chrome or Edge, and click
@@ -57,7 +68,7 @@ no-code editor that reads `admin/config.yml` and writes back to
 ## Editor access (Google sign-in)
 
 The person editing content doesn't have (or need) a GitHub account. Instead,
-`admin/config.yml` points the CMS at a custom OAuth broker
+`public/admin/config.yml` points the CMS at a custom OAuth broker
 (`netlify/functions/auth.mjs` + `callback.mjs`) that:
 
 1. Sends the editor to Google's sign-in screen instead of GitHub's.
@@ -104,12 +115,15 @@ Push to GitHub (already done — this repo), then connect it to
 
 ```toml
 [build]
-  command = "node build.js"
-  publish = "."
+  command = "npm run build"
+  publish = "dist"
 ```
 
-Netlify runs the build on every push (including CMS commits), regenerating
-`index.html` automatically.
+Netlify runs `npm install && npm run build` on every push (including CMS
+commits), regenerating `dist/` automatically. This is a plain static build —
+no `@astrojs/netlify` adapter, no server rendering — so it stays independent
+of `netlify/functions/`, which Netlify deploys separately regardless of what
+`publish` points to.
 
 **Why not Git Gateway?** The classic Netlify CMS/Decap CMS setup used
 Netlify Identity + Git Gateway to authenticate editors. Git Gateway is
@@ -120,8 +134,8 @@ no Identity, no Git Gateway, no self-hosted OAuth proxy required.
 
 ## Updating the CMS script version
 
-`admin/index.html` loads Sveltia CMS from a CDN, pinned to an exact version
-with a Subresource Integrity (SRI) hash for security. To bump it:
+`public/admin/index.html` loads Sveltia CMS from a CDN, pinned to an exact
+version with a Subresource Integrity (SRI) hash for security. To bump it:
 
 ```sh
 NEW_VERSION=x.y.z
@@ -130,28 +144,38 @@ openssl dgst -sha384 -binary /tmp/sveltia.js | openssl base64 -A
 ```
 
 Update both the version number and the `integrity="sha384-..."` value in
-`admin/index.html` together — they must match the exact same file.
+`public/admin/index.html` together — they must match the exact same file.
 
 ## Project structure
 
 ```
 .
-├── admin/
-│   ├── config.yml     Sveltia CMS field definitions (must match portfolio.json's shape)
-│   └── index.html     CMS loader page
+├── public/
+│   ├── admin/
+│   │   ├── config.yml     Sveltia CMS field definitions (must match portfolio.json's shape)
+│   │   └── index.html     CMS loader page
+│   └── uploads/            Images the CMS uploads land here (media_folder), copied as-is to dist/
 ├── content/
-│   └── portfolio.json Editable content — the source of truth
+│   └── portfolio.json     Editable content — the source of truth
+├── src/
+│   ├── pages/
+│   │   └── index.astro     Imports portfolio.json, composes the page
+│   ├── components/
+│   │   ├── Hero.astro, MetaItem.astro, TabNav.astro, SectionHeader.astro,
+│   │   └── JobCard.astro, PlaceholderCard.astro, EducationCard.astro, GalleryTile.astro
+│   └── styles/
+│       └── global.css      The site's one stylesheet
 ├── netlify/
 │   ├── functions/
 │   │   ├── auth.mjs      OAuth step 1 — redirects to Google
 │   │   └── callback.mjs  OAuth step 2 — verifies email, returns GitHub token
 │   └── lib/
 │       └── oauth-shared.mjs  Shared helpers for the two functions above
-├── src/
-│   └── head.html      Static <head> (fonts + CSS), unchanged by content
-├── build.js            Generates index.html from portfolio.json
-├── index.html          Generated — do not hand-edit
-├── netlify.toml         Netlify build config
-├── .env.example         Copy to .env for local testing (never commit .env)
+├── astro.config.mjs      output: 'static', no adapter
+├── netlify.toml          Build command (npm run build) + publish dir (dist)
+├── .env.example          Copy to .env for local testing (never commit .env)
 └── package.json
 ```
+
+`dist/` (Astro's build output) is gitignored — Netlify generates it fresh on
+every deploy via `netlify.toml`'s build command.

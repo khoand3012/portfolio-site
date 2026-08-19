@@ -1,0 +1,12 @@
+---
+// tabs: [{ slug, label }], in display order. First one starts active.
+const { tabs } = Astro.props;
+---
+
+<nav class="tabs">
+  <div class="wrap">
+    {tabs.map((t, i) => (
+      <button class={`tab-btn${i === 0 ? ' active' : ''}`} data-tab={t.slug}>{t.label}</button>
+    ))}
+  </div>
+</nav>

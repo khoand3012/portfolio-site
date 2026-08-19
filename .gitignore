@@ -2,6 +2,10 @@ node_modules/
 .DS_Store
 .env
 
+# Astro build output and cache
+dist/
+.astro/
+
 # Local Netlify folder
 .netlify
 
