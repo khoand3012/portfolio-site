@@ -8,6 +8,10 @@ backend:
   # account. See README.md "Editor access (Google sign-in)".
   base_url: https://namtruong0307.netlify.app
   auth_endpoint: api/auth
+  # Hides Sveltia's "Sign in using access token" option. Without this, anyone
+  # holding a GitHub PAT with write access to this repo could paste it in and
+  # skip the Google sign-in gate entirely.
+  auth_methods: ["oauth"]
 
 # Sveltia CMS can edit the local folder directly (via the browser's File
 # System Access API, Chrome/Edge only) — no proxy server needed. Open
