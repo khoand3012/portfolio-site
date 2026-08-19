@@ -89,20 +89,6 @@ collections:
                         name: "bullets"
                         widget: "list"
                         field: { label: "Nội dung", name: "item", widget: "string" }
-                  - { label: "Nhãn nhỏ phần Học vấn", name: "academicEyebrow", widget: "string" }
-                  - { label: "Tiêu đề phần Học vấn", name: "academicHeading", widget: "string" }
-                  - label: "Học vấn"
-                    name: "education"
-                    widget: "list"
-                    fields:
-                      - { label: "Trường", name: "school", widget: "string" }
-                      - { label: "Thời gian", name: "dates", widget: "string" }
-                      - { label: "Bằng cấp", name: "degree", widget: "string" }
-                      - label: "Mô tả"
-                        name: "bullets"
-                        widget: "list"
-                        field: { label: "Nội dung", name: "item", widget: "string" }
-                      - { label: "Tên luận văn (để trống nếu không có)", name: "dissertation", widget: "string", required: false }
 
               - label: "Tab 3 — English Language Testing and Exams"
                 name: "testing"
@@ -130,7 +116,27 @@ collections:
                         field: { label: "Nội dung", name: "item", widget: "string" }
                   - { label: "Ghi chú khi chưa có thêm nội dung", name: "emptyNote", widget: "string" }
 
-              - label: "Tab 4 — Publications"
+              - label: "Tab 4 — Academic Background"
+                name: "academicBackground"
+                widget: "object"
+                fields:
+                  - { label: "Tên tab", name: "label", widget: "string" }
+                  - { label: "Nhãn nhỏ phía trên tiêu đề", name: "eyebrow", widget: "string" }
+                  - { label: "Tiêu đề", name: "heading", widget: "string" }
+                  - label: "Học vấn"
+                    name: "education"
+                    widget: "list"
+                    fields:
+                      - { label: "Trường", name: "school", widget: "string" }
+                      - { label: "Thời gian", name: "dates", widget: "string" }
+                      - { label: "Bằng cấp", name: "degree", widget: "string" }
+                      - label: "Mô tả"
+                        name: "bullets"
+                        widget: "list"
+                        field: { label: "Nội dung", name: "item", widget: "string" }
+                      - { label: "Tên luận văn (để trống nếu không có)", name: "dissertation", widget: "string", required: false }
+
+              - label: "Tab 5 — Publications"
                 name: "publications"
                 widget: "object"
                 fields:
@@ -139,7 +145,7 @@ collections:
                   - { label: "Tiêu đề", name: "heading", widget: "string" }
                   - { label: "Ghi chú khi chưa có nội dung", name: "emptyNote", widget: "string" }
 
-              - label: "Tab 5 — Talks/Workshops/Seminars"
+              - label: "Tab 6 — Talks/Workshops/Seminars"
                 name: "talks"
                 widget: "object"
                 fields:
@@ -148,7 +154,7 @@ collections:
                   - { label: "Tiêu đề", name: "heading", widget: "string" }
                   - { label: "Ghi chú khi chưa có nội dung", name: "emptyNote", widget: "string" }
 
-              - label: "Tab 6 — Photos and Videos"
+              - label: "Tab 7 — Photos and Videos"
                 name: "media"
                 widget: "object"
                 fields:

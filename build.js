@@ -32,6 +32,7 @@ const TAB_ORDER = [
   { key: 'teaching', slug: 'teaching' },
   { key: 'internationalEducation', slug: 'intl-education' },
   { key: 'testing', slug: 'testing' },
+  { key: 'academicBackground', slug: 'academic-background' },
   { key: 'publications', slug: 'publications' },
   { key: 'talks', slug: 'talks' },
   { key: 'media', slug: 'media' },
@@ -119,11 +120,12 @@ ${(tab.placeholders || []).map(renderPlaceholderCard).join('\n')}`;
           <p class="eyebrow">${escapeHtml(tab.eyebrow)}</p>
           <h2>${escapeHtml(tab.heading)}</h2>
         </div>
-${(tab.jobs || []).map(renderJobCard).join('\n')}
-
-        <div class="section-header" style="margin-top: var(--spacing-2xl);">
-          <p class="eyebrow">${escapeHtml(tab.academicEyebrow)}</p>
-          <h2>${escapeHtml(tab.academicHeading)}</h2>
+${(tab.jobs || []).map(renderJobCard).join('\n')}`;
+  } else if (tabKey === 'academicBackground') {
+    body = `
+        <div class="section-header">
+          <p class="eyebrow">${escapeHtml(tab.eyebrow)}</p>
+          <h2>${escapeHtml(tab.heading)}</h2>
         </div>
 ${(tab.education || []).map(renderEducationCard).join('\n')}`;
   } else if (tabKey === 'testing') {

@@ -59,28 +59,6 @@
             "Contribute to internal audits, compliance reviews, and process improvement initiatives."
           ]
         }
-      ],
-      "academicEyebrow": "Education",
-      "academicHeading": "Academic Background",
-      "education": [
-        {
-          "school": "University of Huddersfield — United Kingdom",
-          "dates": "2021 – 2022",
-          "degree": "Master of Arts in Education (Technology Enhanced Learning)",
-          "bullets": [
-            "Final grade: Passed with Distinction. Awarded University Scholarship for South-East Asia Excellence."
-          ],
-          "dissertation": "Mobile Learning Practices in Vietnamese Higher Education Institutions"
-        },
-        {
-          "school": "University of Languages and International Studies — VNU, Vietnam",
-          "dates": "2015 – 2019",
-          "degree": "Bachelor of Arts in TESOL (Minor: Simplified Chinese)",
-          "bullets": [
-            "Graduated with Distinction (GPA: 3.5/4.0)."
-          ],
-          "dissertation": ""
-        }
       ]
     },
     "testing": {
@@ -104,6 +82,31 @@
         }
       ],
       "emptyNote": "Add further testing/exam-specific achievements, statistics, or accreditations here."
+    },
+    "academicBackground": {
+      "label": "Academic Background",
+      "eyebrow": "Education",
+      "heading": "Academic Background",
+      "education": [
+        {
+          "school": "University of Huddersfield — United Kingdom",
+          "dates": "2021 – 2022",
+          "degree": "Master of Arts in Education (Technology Enhanced Learning)",
+          "bullets": [
+            "Final grade: Passed with Distinction. Awarded University Scholarship for South-East Asia Excellence."
+          ],
+          "dissertation": "Mobile Learning Practices in Vietnamese Higher Education Institutions"
+        },
+        {
+          "school": "University of Languages and International Studies — VNU, Vietnam",
+          "dates": "2015 – 2019",
+          "degree": "Bachelor of Arts in TESOL (Minor: Simplified Chinese)",
+          "bullets": [
+            "Graduated with Distinction (GPA: 3.5/4.0)."
+          ],
+          "dissertation": ""
+        }
+      ]
     },
     "publications": {
       "label": "Publications",
