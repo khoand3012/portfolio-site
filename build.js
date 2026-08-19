@@ -164,12 +164,16 @@ ${(tab.jobs || []).map(renderJobCard).join('\n')}
       </section>`;
 }
 
-function renderMetaItem(icon, text) {
+function renderMetaItem(icon, text, href) {
   if (!text) return '';
-  return `        <span class="meta-item">
+  const tag = href ? 'a' : 'span';
+  const attrs = href
+    ? ` href="${escapeHtml(href)}"${/^https?:/.test(href) ? ' target="_blank" rel="noopener"' : ''}`
+    : '';
+  return `        <${tag} class="meta-item"${attrs}>
           ${META_ICONS[icon]}
           ${escapeHtml(text)}
-        </span>`;
+        </${tag}>`;
 }
 
 function build() {
@@ -185,7 +189,20 @@ function build() {
         <div class="avatar" aria-hidden="true">${escapeHtml(hero.initials)}</div>
       </div>
       <div class="meta-row">
-${[renderMetaItem('phone', hero.phone), renderMetaItem('mail', hero.email), renderMetaItem('linkedin', hero.linkedin), renderMetaItem('pin', hero.location)].filter(Boolean).join('\n')}
+${[
+  renderMetaItem('phone', hero.phone, hero.phone && `tel:${hero.phone.replace(/[^\d+]/g, '')}`),
+  renderMetaItem('mail', hero.email, hero.email && `mailto:${hero.email}`),
+  renderMetaItem(
+    'linkedin',
+    hero.linkedin,
+    hero.linkedin && (/^https?:\/\//.test(hero.linkedin) ? hero.linkedin : `https://${hero.linkedin}`),
+  ),
+  renderMetaItem(
+    'pin',
+    hero.location,
+    hero.location && `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(hero.location)}`,
+  ),
+].filter(Boolean).join('\n')}
       </div>
       <p class="profile">${escapeHtml(hero.profile)}</p>
     </div>
