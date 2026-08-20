@@ -1,6 +1,10 @@
 # Design: Migrate off Astro to Vite + React, add a local-only Puck editor
 
-Status: draft, awaiting review
+Status: superseded — see
+`2026-08-20-nextjs-live-admin-panel-design.md`. After this spec was
+committed, the site owner decided to go with a live/hosted admin panel
+instead of a local-only editor, which changes the framework choice too
+(Next.js, not Vite). Kept here for history/context only.
 Date: 2026-08-20
 
 ## Why
