@@ -24,8 +24,14 @@
         }
       ],
       "placeholders": [
-        { "company": "Hanoi Metropolitan University", "note": "Add role, dates, and responsibilities here." },
-        { "company": "Alpaca Edu Co. LTD", "note": "Add role, dates, and responsibilities here." }
+        {
+          "company": "Hanoi Metropolitan University",
+          "note": "Add role, dates, and responsibilities here."
+        },
+        {
+          "company": "Alpaca Edu Co. LTD",
+          "note": "Add role, dates, and responsibilities here."
+        }
       ]
     },
     "internationalEducation": {
@@ -61,7 +67,10 @@
       "label": "English Language Testing and Exams",
       "certificates": [
         { "text": "IELTS Academic — Overall 8.0 (2025)", "accent": true },
-        { "text": "Chinese Proficiency Test — HSK Level 3 (2018)", "accent": false }
+        {
+          "text": "Chinese Proficiency Test — HSK Level 3 (2018)",
+          "accent": false
+        }
       ],
       "jobs": [
         {
@@ -93,9 +102,7 @@
           "school": "University of Languages and International Studies — VNU, Vietnam",
           "dates": "2015 – 2019",
           "degree": "Bachelor of Arts in TESOL (Minor: Simplified Chinese)",
-          "bullets": [
-            "Graduated with Distinction (GPA: 3.5/4.0)."
-          ],
+          "bullets": ["Graduated with Distinction (GPA: 3.5/4.0)."],
           "dissertation": ""
         }
       ]

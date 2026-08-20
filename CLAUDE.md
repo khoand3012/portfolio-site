@@ -55,9 +55,11 @@ for top-level tab structure).
 
 A quick way to sanity-check they still agree: parse both with a script that
 walks the YAML `fields` tree and the JSON object tree and diffs the field
-names structurally (this was done once by hand when the CMS was first set
-up — there's no committed script for it, so recreate the check if you're
-unsure).
+names structurally (this was done a few times by hand when the schema
+changed — there's no committed script for it, so recreate the check if
+you're unsure). Separately, `src/types.ts`'s `PortfolioData` interface is a
+second, TypeScript-checked copy of this same shape — update all three
+(JSON, config.yml, types.ts) together.
 
 ## CDN scripts need pinned versions + SRI
 
@@ -88,7 +90,7 @@ going forward).
 The content editor has no GitHub account, so `public/admin/config.yml` does
 **not** use Netlify's default built-in OAuth for the `github` backend. Instead
 `backend.base_url`/`auth_endpoint` point at a custom broker in
-`netlify/functions/auth.mjs` + `callback.mjs`, which gates login behind
+`netlify/functions/auth.ts` + `callback.ts`, which gates login behind
 Google sign-in and an `ALLOWED_EMAILS` allowlist, then hands back a
 pre-provisioned `GITHUB_TOKEN` (env var) that the editor never sees. See
 README.md's "Editor access (Google sign-in)" for the full explanation and
@@ -98,14 +100,62 @@ Implications for future changes:
 - If `public/admin/config.yml`'s `base_url` ever needs to change (e.g. the
   site moves to a different Netlify subdomain or a custom domain), update it
   there **and** the `TRUSTED_ORIGINS` constant in
-  `netlify/lib/oauth-shared.mjs` **and** the two "Authorized redirect URIs"
+  `netlify/lib/oauth-shared.ts` **and** the two "Authorized redirect URIs"
   in the Google Cloud OAuth Client — all three must agree exactly, on both
   the production URL and the `localhost:8888` one used for `netlify dev`.
 - Don't remove the CSRF cookie check or the `aud`/`email_verified` checks in
-  `callback.mjs` as a "simplification" — they're what stop a forged request
+  `callback.ts` as a "simplification" — they're what stop a forged request
   from getting a valid GitHub write token.
 - To change who can edit, only `ALLOWED_EMAILS` needs to change (in
   Netlify's env var settings) — no code change.
+
+## TypeScript checking needs two commands, not one
+
+`astro check` only walks files reachable from `.astro` pages — it does
+**not** type-check `netlify/functions/` or `netlify/lib/` on its own, since
+those aren't imported by anything in `src/`. Always run both (`npm run
+check` does this):
+
+```sh
+npx astro check && npx tsc --noEmit
+```
+
+## Biome: `.astro` files are excluded, and why
+
+`biome.json`'s `files.includes` excludes `**/*.astro`. Biome's Astro support
+(added v2.3, still experimental as of v2.5) doesn't see that a variable
+destructured in a component's frontmatter (`const { job } = Astro.props`) is
+used by the template markup below it — it reports nearly every props
+destructure as `lint/correctness/noUnusedVariables`/`noUnusedImports`. This
+was verified directly: running `biome check --write .` without the
+exclusion deleted the actual `Astro.props` destructures and imports from
+every component. **Do not remove this exclusion** without first running
+`biome check --write` on a throwaway copy and diffing the result — if it's
+still deleting used code, keep the exclusion. `public/admin/index.html`
+(third-party CMS loader) and `package-lock.json` (machine-generated,
+formatting it produces tens of thousands of diagnostics) are excluded for
+unrelated reasons — see the comments in `biome.json`'s sibling doc in
+README.md.
+
+Also: `biome.json` must be **strict JSON, no `//` comments** — Biome's
+config parser rejects them outright, and does so by silently falling back
+to full defaults (checking `node_modules`, every `.astro` file, tabs
+instead of the configured spaces) rather than erroring loudly on
+`biome check .` — only `biome check --config-path` on a single file
+surfaces the actual parse error. If `biome check .` ever reports tens of
+thousands of diagnostics again, check for a syntax error in `biome.json`
+first.
+
+## Local dev: `netlify dev` needs `--framework "#static"`
+
+Astro 7's `astro dev` runs as a background daemon (`astro dev status` /
+`astro dev stop` manage it), not a foreground process. Netlify Dev's
+framework auto-detection expects the dev command to block in the
+foreground; when it returns immediately (because the real server
+daemonized), Netlify Dev concludes the process exited and shuts down. Build
+first (`npm run build`) and run `netlify dev --framework "#static"` instead
+— it serves `dist/` directly alongside `netlify/functions/`, which is what
+you want for testing the OAuth broker anyway.
 
 ## Design tokens are fixed
 

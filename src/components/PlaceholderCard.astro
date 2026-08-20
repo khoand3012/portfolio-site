@@ -1,5 +1,11 @@
 ---
-const { item } = Astro.props;
+import type { PlaceholderEntry } from '../types';
+
+interface Props {
+  item: PlaceholderEntry;
+}
+
+const { item }: Props = Astro.props;
 ---
 
 <div class="placeholder card">

@@ -1,7 +1,12 @@
 ---
 import MetaItem from './MetaItem.astro';
+import type { Hero as HeroData } from '../types';
 
-const { hero } = Astro.props;
+interface Props {
+  hero: HeroData;
+}
+
+const { hero }: Props = Astro.props;
 
 const phoneHref = hero.phone && `tel:${hero.phone.replace(/[^\d+]/g, '')}`;
 const emailHref = hero.email && `mailto:${hero.email}`;

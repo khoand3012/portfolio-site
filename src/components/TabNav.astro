@@ -1,6 +1,10 @@
 ---
 // tabs: [{ slug, label }], in display order. First one starts active.
-const { tabs } = Astro.props;
+interface Props {
+  tabs: { slug: string; label: string }[];
+}
+
+const { tabs }: Props = Astro.props;
 ---
 
 <nav class="tabs">

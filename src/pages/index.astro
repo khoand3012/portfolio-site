@@ -1,6 +1,7 @@
 ---
 import "../styles/global.css";
-import data from "../../content/portfolio.json";
+import rawData from "../../content/portfolio.json";
+import type { PortfolioData } from "../types";
 import Hero from "../components/Hero.astro";
 import TabNav from "../components/TabNav.astro";
 import JobCard from "../components/JobCard.astro";
@@ -8,9 +9,11 @@ import PlaceholderCard from "../components/PlaceholderCard.astro";
 import EducationCard from "../components/EducationCard.astro";
 import GalleryTile from "../components/GalleryTile.astro";
 
+const data = rawData as PortfolioData;
+
 // Order + slugs are structural (drive both the nav buttons and the
 // tab-switching script below) — content per tab comes from portfolio.json.
-const TAB_ORDER = [
+const TAB_ORDER: { key: keyof PortfolioData["tabs"]; slug: string }[] = [
   { key: "teaching", slug: "teaching" },
   { key: "internationalEducation", slug: "intl-education" },
   { key: "testing", slug: "testing" },
@@ -110,8 +113,8 @@ const navTabs = TAB_ORDER.map((t) => ({
     </footer>
 
     <script>
-      const buttons = document.querySelectorAll(".tab-btn");
-      const panels = {
+      const buttons = document.querySelectorAll<HTMLButtonElement>(".tab-btn");
+      const panels: Record<string, HTMLElement | null> = {
         teaching: document.getElementById("tab-teaching"),
         "intl-education": document.getElementById("tab-intl-education"),
         testing: document.getElementById("tab-testing"),
@@ -125,9 +128,9 @@ const navTabs = TAB_ORDER.map((t) => ({
       buttons.forEach((btn) => {
         btn.addEventListener("click", () => {
           buttons.forEach((b) => b.classList.remove("active"));
-          Object.values(panels).forEach((p) => p.classList.remove("active"));
+          Object.values(panels).forEach((p) => p?.classList.remove("active"));
           btn.classList.add("active");
-          panels[btn.dataset.tab].classList.add("active");
+          panels[btn.dataset.tab ?? ""]?.classList.add("active");
         });
       });
     </script>

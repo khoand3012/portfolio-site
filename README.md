@@ -69,7 +69,7 @@ Astro build itself.)
 
 The person editing content doesn't have (or need) a GitHub account. Instead,
 `public/admin/config.yml` points the CMS at a custom OAuth broker
-(`netlify/functions/auth.mjs` + `callback.mjs`) that:
+(`netlify/functions/auth.ts` + `callback.ts`) that:
 
 1. Sends the editor to Google's sign-in screen instead of GitHub's.
 2. Verifies their Google identity (via Google's tokeninfo endpoint) and
@@ -101,7 +101,13 @@ http://localhost:8888/api/callback     # for local `netlify dev` testing
 ```
 
 **Testing locally:** copy `.env.example` to `.env`, fill in real values, then
-run `netlify dev` and open `http://localhost:8888/admin/`.
+run `netlify dev --framework "#static"` and open `http://localhost:8888/admin/`.
+The `--framework "#static"` flag matters: Astro 7's `astro dev` runs as a
+background daemon rather than a foreground process, which confuses Netlify
+Dev's default framework auto-detection (it thinks the dev server exited
+immediately and shuts down). `--framework "#static"` tells it to just serve
+the built `dist/` folder plus `netlify/functions/` directly, which is what
+you want for testing the auth flow anyway — run `npm run build` first.
 
 To change who can edit, just update `ALLOWED_EMAILS` in Netlify's dashboard
 — no code change or redeploy of the function needed (env var changes do
@@ -146,6 +152,37 @@ openssl dgst -sha384 -binary /tmp/sveltia.js | openssl base64 -A
 Update both the version number and the `integrity="sha384-..."` value in
 `public/admin/index.html` together — they must match the exact same file.
 
+## TypeScript & Biome
+
+The whole project (Astro components, `netlify/functions/`, `src/types.ts`)
+is TypeScript, checked with `astro check` (Astro files) and `tsc --noEmit`
+(everything else, since `astro check` only walks files reachable from
+`.astro` pages) — run both together with:
+
+```sh
+npm run check
+```
+
+`src/types.ts` defines `PortfolioData`, matching `content/portfolio.json`'s
+shape; `src/pages/index.astro` casts the JSON import to it. Keep this type
+in sync with the JSON and with `public/admin/config.yml` when the schema
+changes (see CLAUDE.md).
+
+Linting and formatting use [Biome](https://biomejs.dev):
+
+```sh
+npm run lint        # report issues, no changes
+npm run lint:fix     # apply safe fixes + formatting
+```
+
+**`.astro` files are excluded from Biome** (see `biome.json`). Biome's Astro
+support is still experimental and doesn't yet see that variables
+destructured in a component's frontmatter are used by the template markup
+below it — it flags nearly every props destructure as "unused", and
+`--write` would delete real, working code. Re-evaluate this exclusion once
+Biome's Astro support matures. `public/admin/index.html` (third-party CMS
+loader) and `package-lock.json` (machine-generated) are excluded too.
+
 ## Project structure
 
 ```
@@ -163,15 +200,18 @@ Update both the version number and the `integrity="sha384-..."` value in
 │   ├── components/
 │   │   ├── Hero.astro, MetaItem.astro, TabNav.astro,
 │   │   └── JobCard.astro, PlaceholderCard.astro, EducationCard.astro, GalleryTile.astro
-│   └── styles/
-│       └── global.css      The site's one stylesheet
+│   ├── styles/
+│   │   └── global.css      The site's one stylesheet
+│   └── types.ts             PortfolioData — matches content/portfolio.json's shape
 ├── netlify/
 │   ├── functions/
-│   │   ├── auth.mjs      OAuth step 1 — redirects to Google
-│   │   └── callback.mjs  OAuth step 2 — verifies email, returns GitHub token
+│   │   ├── auth.ts       OAuth step 1 — redirects to Google
+│   │   └── callback.ts   OAuth step 2 — verifies email, returns GitHub token
 │   └── lib/
-│       └── oauth-shared.mjs  Shared helpers for the two functions above
+│       └── oauth-shared.ts   Shared helpers for the two functions above
 ├── astro.config.mjs      output: 'static', no adapter
+├── tsconfig.json          extends astro/tsconfigs/strict
+├── biome.json             Lint/format config — see "TypeScript & Biome"
 ├── netlify.toml          Build command (npm run build) + publish dir (dist)
 ├── .env.example          Copy to .env for local testing (never commit .env)
 └── package.json

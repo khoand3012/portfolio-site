@@ -3,19 +3,39 @@
 // ALLOWED_EMAILS, and — only if it matches — hand the CMS a GitHub token that
 // can write to this repo. The editor never sees or needs a GitHub account.
 
-import { outputHtml, parseCookies, isEmailAllowed, PROVIDER } from '../lib/oauth-shared.mjs';
+import {
+  isEmailAllowed,
+  outputHtml,
+  PROVIDER,
+  parseCookies,
+} from '../lib/oauth-shared.ts';
 
-export default async (req) => {
+interface GoogleTokenResponse {
+  id_token?: string;
+}
+
+interface GoogleTokenInfo {
+  aud?: string;
+  email?: string;
+  email_verified?: string;
+}
+
+export default async (req: Request): Promise<Response> => {
   const url = new URL(req.url);
   const code = url.searchParams.get('code');
   const state = url.searchParams.get('state');
 
   const cookies = parseCookies(req.headers.get('cookie'));
-  const match = (cookies['csrf-token'] ?? '').match(/^([a-z]+)_([0-9a-f]{32})$/);
+  const match = (cookies['csrf-token'] ?? '').match(
+    /^([a-z]+)_([0-9a-f]{32})$/,
+  );
   const [, cookieProvider, csrfToken] = match ?? [];
 
   if (!cookieProvider || cookieProvider !== PROVIDER) {
-    return outputHtml({ error: 'Unsupported Git backend.', errorCode: 'UNSUPPORTED_BACKEND' });
+    return outputHtml({
+      error: 'Unsupported Git backend.',
+      errorCode: 'UNSUPPORTED_BACKEND',
+    });
   }
 
   if (!code || !state) {
@@ -32,13 +52,21 @@ export default async (req) => {
     });
   }
 
-  const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GITHUB_TOKEN, ALLOWED_EMAILS } = process.env;
+  const {
+    GOOGLE_CLIENT_ID,
+    GOOGLE_CLIENT_SECRET,
+    GITHUB_TOKEN,
+    ALLOWED_EMAILS,
+  } = process.env;
 
   if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !GITHUB_TOKEN) {
-    return outputHtml({ error: 'Server is not configured correctly.', errorCode: 'MISCONFIGURED_CLIENT' });
+    return outputHtml({
+      error: 'Server is not configured correctly.',
+      errorCode: 'MISCONFIGURED_CLIENT',
+    });
   }
 
-  let tokenRes;
+  let tokenRes: Response;
 
   try {
     tokenRes = await fetch('https://oauth2.googleapis.com/token', {
@@ -59,16 +87,21 @@ export default async (req) => {
     });
   }
 
-  const tokenData = await tokenRes.json().catch(() => null);
+  const tokenData: GoogleTokenResponse | null = await tokenRes
+    .json()
+    .catch(() => null);
 
   if (!tokenRes.ok || !tokenData?.id_token) {
-    return outputHtml({ error: 'Google sign-in failed. Please try again.', errorCode: 'TOKEN_REQUEST_FAILED' });
+    return outputHtml({
+      error: 'Google sign-in failed. Please try again.',
+      errorCode: 'TOKEN_REQUEST_FAILED',
+    });
   }
 
   // Verify the ID token via Google's tokeninfo endpoint rather than checking the
   // JWT signature locally — no crypto/JWK dependency needed, and the traffic
   // volume here (a handful of logins) is well within what this endpoint is for.
-  let info;
+  let info: GoogleTokenInfo;
 
   try {
     const infoRes = await fetch(

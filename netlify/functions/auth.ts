@@ -1,16 +1,19 @@
 // Step 1 of the OAuth popup flow: the CMS opens a popup here, we redirect it to
-// Google's consent screen instead of GitHub's. See netlify/lib/oauth-shared.mjs
+// Google's consent screen instead of GitHub's. See netlify/lib/oauth-shared.ts
 // for the shared protocol notes.
 
 import { randomUUID } from 'node:crypto';
-import { outputHtml, PROVIDER } from '../lib/oauth-shared.mjs';
+import { outputHtml, PROVIDER } from '../lib/oauth-shared.ts';
 
-export default async (req) => {
+export default async (req: Request): Promise<Response> => {
   const url = new URL(req.url);
   const provider = url.searchParams.get('provider');
 
   if (provider !== PROVIDER) {
-    return outputHtml({ error: 'Unsupported Git backend.', errorCode: 'UNSUPPORTED_BACKEND' });
+    return outputHtml({
+      error: 'Unsupported Git backend.',
+      errorCode: 'UNSUPPORTED_BACKEND',
+    });
   }
 
   const { GOOGLE_CLIENT_ID } = process.env;
@@ -41,7 +44,8 @@ export default async (req) => {
     headers: {
       Location: `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`,
       'Set-Cookie':
-        `csrf-token=${PROVIDER}_${csrfToken}; ` + `HttpOnly; Path=/; Max-Age=600; SameSite=Lax; Secure`,
+        `csrf-token=${PROVIDER}_${csrfToken}; ` +
+        `HttpOnly; Path=/; Max-Age=600; SameSite=Lax; Secure`,
     },
   });
 };

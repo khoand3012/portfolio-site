@@ -1,5 +1,11 @@
 ---
-const { ed } = Astro.props;
+import type { Education } from '../types';
+
+interface Props {
+  ed: Education;
+}
+
+const { ed }: Props = Astro.props;
 ---
 
 <div class="block-card">
