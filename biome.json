@@ -6,13 +6,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": [
-      "**",
-      "!!**/dist",
-      "!!**/*.astro",
-      "!!public/admin/index.html",
-      "!!package-lock.json"
-    ]
+    "includes": ["**", "!!**/dist", "!!**/*.astro", "!!package-lock.json"]
   },
   "formatter": {
     "enabled": true,
