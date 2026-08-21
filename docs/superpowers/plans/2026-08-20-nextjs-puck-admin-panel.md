@@ -313,6 +313,14 @@ import { readFileSync, writeFileSync } from 'node:fs';
 
 const oldData = JSON.parse(readFileSync('content/portfolio.json', 'utf8'));
 
+// Refuse to run against already-migrated content: re-running this against the
+// new block shape would read `oldData.tabs.teaching.jobs` as undefined and
+// silently overwrite content/portfolio.json with emptied-out blocks.
+if (oldData.tabs?.teaching?.blocks) {
+  console.error('content/portfolio.json already looks migrated (teaching.blocks exists) — aborting.');
+  process.exit(1);
+}
+
 const jobsToBlocks = (jobs = []) => jobs.map((j) => ({ type: 'job', ...j }));
 const placeholdersToBlocks = (items = []) => items.map((p) => ({ type: 'placeholder', ...p }));
 const educationToBlocks = (education = []) => education.map((e) => ({ type: 'education', ...e }));
@@ -1479,16 +1487,114 @@ git commit -m "Switch to Next.js server rendering via @netlify/plugin-nextjs"
 
 ---
 
-### Task 11: `portfolioContent.ts` v2 — Netlify Blobs + history snapshots
+### Task 11: `portfolioContent.ts` v2 — Netlify Blobs (with a local-dev fallback) + history snapshots
+
+**Local-dev problem this task solves:** `@netlify/blobs` needs Netlify's runtime context (site/deploy identity), which only exists on an actual Netlify deploy or under `netlify dev` with a linked site. Plain `npm run dev` (`next dev`) has neither, so calling it directly would make every read/write throw locally — meaning Tasks 14, 17, and 18's "edit → save → confirm the public page updates" verification steps would be un-runnable as written. This task adds a small store abstraction so local dev exercises the exact same read/write/history-snapshot logic against a gitignored local JSON file instead, with zero difference in the public API the rest of the plan depends on.
 
 **Files:**
+- Create: `src/lib/blobStore.ts`
+- Test: `src/lib/blobStore.test.ts`
 - Modify: `src/lib/portfolioContent.ts`
 - Test: `src/lib/portfolioContent.test.ts`
+- Modify: `.gitignore`
 
 **Interfaces:**
-- Produces: `getPortfolioContent(): Promise<PortfolioData>` (same signature as v1 — `app/page.tsx` needs no changes), `savePortfolioContent(data: PortfolioData): Promise<void>` — Task 14's save action and Task 17's Puck save action both call this.
+- Produces: `getContentStore(storeName: string): ContentStore` where `ContentStore = { get(key: string): Promise<unknown | null>; setJSON(key: string, value: unknown): Promise<void> }` — `portfolioContent.ts` (this task) is its only consumer. `getPortfolioContent(): Promise<PortfolioData>` (same signature as v1 — `app/page.tsx` needs no changes), `savePortfolioContent(data: PortfolioData): Promise<void>` — Task 14's save action and Task 17's Puck save action both call this.
 
-- [ ] **Step 1: Write the failing tests against a mocked Blob store**
+- [ ] **Step 1: Write the failing test for the local file store**
+
+```ts
+// src/lib/blobStore.test.ts
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+let tempDir: string;
+
+beforeEach(() => {
+  tempDir = mkdtempSync(path.join(tmpdir(), 'blobstore-test-'));
+  vi.spyOn(process, 'cwd').mockReturnValue(tempDir);
+  vi.resetModules();
+});
+
+afterEach(() => {
+  rmSync(tempDir, { recursive: true, force: true });
+  vi.restoreAllMocks();
+});
+
+describe('getContentStore (local file fallback)', () => {
+  it('returns null for a key that has never been written', async () => {
+    const { getContentStore } = await import('./blobStore');
+    const store = getContentStore('portfolio');
+    expect(await store.get('current.json')).toBeNull();
+  });
+
+  it('round-trips a value written with setJSON, including nested keys', async () => {
+    const { getContentStore } = await import('./blobStore');
+    const store = getContentStore('portfolio');
+    await store.setJSON('history/2026-01-01.json', { hero: { name: 'Test' } });
+    expect(await store.get('history/2026-01-01.json')).toEqual({ hero: { name: 'Test' } });
+  });
+});
+```
+
+- [ ] **Step 2: Run to confirm it fails**
+
+Run: `npx vitest run src/lib/blobStore.test.ts`
+Expected: FAIL — module doesn't exist.
+
+- [ ] **Step 3: Implement `blobStore.ts`**
+
+```ts
+// src/lib/blobStore.ts
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import path from 'node:path';
+import { getStore } from '@netlify/blobs';
+
+export interface ContentStore {
+  get(key: string): Promise<unknown | null>;
+  setJSON(key: string, value: unknown): Promise<void>;
+}
+
+function localFileStore(storeName: string): ContentStore {
+  const baseDir = path.join(process.cwd(), '.local-blobs', storeName);
+  return {
+    async get(key) {
+      const filePath = path.join(baseDir, key);
+      if (!existsSync(filePath)) return null;
+      return JSON.parse(readFileSync(filePath, 'utf8'));
+    },
+    async setJSON(key, value) {
+      const filePath = path.join(baseDir, key);
+      mkdirSync(path.dirname(filePath), { recursive: true });
+      writeFileSync(filePath, JSON.stringify(value, null, 2));
+    },
+  };
+}
+
+export function getContentStore(storeName: string): ContentStore {
+  // Netlify's build/runtime and `netlify dev` both set NETLIFY=true; plain
+  // `next dev`/`next start` don't, and have no Blobs context to read from —
+  // fall back to a local gitignored JSON store so local dev and manual
+  // verification work without requiring the Netlify CLI or a linked site.
+  return process.env.NETLIFY ? getStore(storeName) : localFileStore(storeName);
+}
+```
+
+- [ ] **Step 4: Run test, confirm it passes; update `.gitignore`**
+
+Run: `npx vitest run src/lib/blobStore.test.ts`
+Expected: PASS.
+
+Add to `.gitignore`:
+
+```
+# Local stand-in for Netlify Blobs, used when NETLIFY is unset (plain `next dev`)
+.local-blobs/
+```
+
+- [ ] **Step 5: Write the failing tests for `portfolioContent.ts` against a mocked store**
 
 ```ts
 // src/lib/portfolioContent.test.ts
@@ -1496,8 +1602,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const memoryStore = new Map<string, unknown>();
 
-vi.mock('@netlify/blobs', () => ({
-  getStore: () => ({
+vi.mock('./blobStore', () => ({
+  getContentStore: () => ({
     get: async (key: string) => memoryStore.get(key) ?? null,
     setJSON: async (key: string, value: unknown) => {
       memoryStore.set(key, value);
@@ -1531,11 +1637,11 @@ describe('portfolioContent', () => {
     expect(memoryStore.get(historyKeys[0])).toEqual(updated);
   });
 
-  it('falls back to the seed file if the Blob read throws, rather than crashing', async () => {
+  it('falls back to the seed file if the store read throws, rather than crashing', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     const originalGet = memoryStore.get.bind(memoryStore);
     memoryStore.get = () => {
-      throw new Error('simulated Blobs outage');
+      throw new Error('simulated store outage');
     };
 
     const data = await getPortfolioContent();
@@ -1546,16 +1652,16 @@ describe('portfolioContent', () => {
 });
 ```
 
-- [ ] **Step 2: Run to confirm it fails**
+- [ ] **Step 6: Run to confirm it fails**
 
 Run: `npx vitest run src/lib/portfolioContent.test.ts`
 Expected: FAIL — `savePortfolioContent` doesn't exist yet, and `getPortfolioContent` doesn't read from a store or handle a throw.
 
-- [ ] **Step 3: Implement `portfolioContent.ts` v2**
+- [ ] **Step 7: Implement `portfolioContent.ts` v2**
 
 ```ts
 // src/lib/portfolioContent.ts
-import { getStore } from '@netlify/blobs';
+import { getContentStore } from './blobStore';
 import seedData from '../../content/portfolio.json';
 import type { PortfolioData } from '../types';
 
@@ -1567,37 +1673,38 @@ function historyKey(): string {
 }
 
 export async function getPortfolioContent(): Promise<PortfolioData> {
-  const store = getStore(STORE_NAME);
+  const store = getContentStore(STORE_NAME);
   try {
-    const current = (await store.get(CURRENT_KEY, { type: 'json' })) as PortfolioData | null;
+    const current = (await store.get(CURRENT_KEY)) as PortfolioData | null;
     return current ?? (seedData as PortfolioData);
   } catch (error) {
-    // A Blob read failure (not just "nothing saved yet") should degrade to the
+    // A store read failure (not just "nothing saved yet") should degrade to the
     // seed content rather than break the public page — see spec's Error handling section.
-    console.error('Failed to read portfolio content from Netlify Blobs, falling back to seed data:', error);
+    console.error('Failed to read portfolio content from the content store, falling back to seed data:', error);
     return seedData as PortfolioData;
   }
 }
 
 export async function savePortfolioContent(data: PortfolioData): Promise<void> {
-  const store = getStore(STORE_NAME);
+  const store = getContentStore(STORE_NAME);
   await store.setJSON(CURRENT_KEY, data);
   // Timestamped snapshot on every save — this is the "git diff before commit"
-  // safety net a git-tracked file gave for free, now that content lives in Blobs.
+  // safety net a git-tracked file gave for free, now that content lives in a
+  // Blob/local store instead of a git-tracked file.
   await store.setJSON(historyKey(), data);
 }
 ```
 
-- [ ] **Step 4: Run tests, confirm they pass**
+- [ ] **Step 8: Run tests, confirm they pass**
 
 Run: `npx vitest run src/lib/portfolioContent.test.ts`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 9: Commit**
 
 ```bash
-git add src/lib/portfolioContent.ts src/lib/portfolioContent.test.ts
-git commit -m "Back portfolioContent with Netlify Blobs, add history snapshots on save"
+git add src/lib/blobStore.ts src/lib/blobStore.test.ts src/lib/portfolioContent.ts src/lib/portfolioContent.test.ts .gitignore
+git commit -m "Back portfolioContent with Netlify Blobs, a local-dev file fallback, and history snapshots"
 ```
 
 ---
@@ -1612,7 +1719,9 @@ git commit -m "Back portfolioContent with Netlify Blobs, add history snapshots o
 - [ ] **Step 1: Run the full test suite and a manual check**
 
 Run: `npm run test && npm run build && npm run dev`
-Expected: all tests pass; visiting the dev server shows the same page as before (now reading from an empty Blob store locally, so it falls back to the seed `content/portfolio.json` — confirm the page still renders correctly in that fallback state, since production will start from exactly this state on first deploy).
+Expected: all tests pass; visiting the dev server shows the same page as before. Locally (no `NETLIFY` env var set) this now reads through `getContentStore`'s local-file fallback from Task 11 — an empty `.local-blobs/` means `getPortfolioContent()` falls back to the seed `content/portfolio.json`, which is the correct behavior to confirm here (production will start from exactly this state on first deploy too, reading real Blobs instead of the local file).
+
+Then confirm the *write* path also works locally, since Task 14 depends on it: in a Node REPL or a throwaway script, `await import('./src/lib/portfolioContent.js').then(m => m.savePortfolioContent({...seed data, footer: 'test'}))` (adjust the import to however the project resolves TS at runtime, e.g. via `tsx`) and confirm a `.local-blobs/portfolio/current.json` file appears with the change, and a `.local-blobs/portfolio/history/*.json` snapshot alongside it. Delete `.local-blobs/` afterward so it doesn't linger as stale local state (it's gitignored, so this is just tidiness, not a git operation).
 
 - [ ] **Step 2: If everything matches, there is nothing to commit for this task**
 
@@ -1890,9 +1999,14 @@ Phase 2 is now complete and independently shippable: a real person can sign in w
 **Interfaces:**
 - Produces: `puckConfig: Config` — Task 17's `PuckAdmin` component imports this.
 
+**This task's code was reconciled against the official `puck` skill** (installed via `npx skills add puckeditor/skills --skill puck` — read `.agents/skills/puck/SKILL.md` and `references/config-authoring.md` before touching this file if either has changed since). Two things from that skill this task deliberately does NOT follow, recorded here so a reviewer doesn't flag them as gaps:
+
+- The skill's default pattern stores content as Puck's own `Data` shape and renders the public page with `<Render>`. This app already has its own `Block[]` content model from Phase 1 (which shipped before Puck was even a dependency), and the public page already renders it via `BlockRenderer`/`TabbedContent`. Per the skill's own principle ("the app owns the data — there is no hosted content store"), keeping `Block[]` as the stored format and using Puck only as an editing surface over a transient view of it is the correct choice here, not a shortcut — Task 16's adapter is the bridge, with its own round-trip fidelity test guarding the one risk this approach introduces.
+- The skill's `/edit`-suffix + middleware-rewrite pattern (any page editable in place) is designed for a general page tree. This app has exactly seven fixed tabs, not an arbitrary page tree, so a single fixed `/admin` route with a tab selector (Task 17) is the simpler correct shape for this problem, not a missed convention.
+
 - [ ] **Step 1: Verify Puck's current API before writing config code**
 
-Check `https://puckeditor.com/docs/api-reference/configuration/config` and `https://puckeditor.com/docs/api-reference/fields/array` (or the installed `@puckeditor/core` package's own type definitions/README) to confirm: the `Config` shape (`components` map, each with `fields`/`defaultProps`/`render`), the `array` field's `arrayFields`/`defaultItemProps`/`getItemSummary` options, and the `select`/`radio` field option shapes. The code below matches what these docs showed as of this plan being written — confirm nothing has changed before proceeding, and adjust field option names if it has.
+Fetch `https://puckeditor.com/docs/integrating-puck/component-configuration.md` and `https://puckeditor.com/docs/api-reference/fields/array.md` (per the puck skill's "docs first" principle — the `.md` suffix on any puckeditor.com docs URL returns markdown) to confirm: the `Config<Props>` generic shape, the `array` field's `arrayFields`/`defaultItemProps`/`getItemSummary` options, and the `select`/`radio` field option shapes. The code below matches what these docs showed as of this plan being written — confirm nothing has changed before proceeding, and adjust field option names if it has. Also run `npm ls @puckeditor/core` after Step 2 to confirm the installed version, since the package scope changed once already (`@measured/puck` → `@puckeditor/core` in 0.21).
 
 - [ ] **Step 2: Install Puck**
 
@@ -1901,6 +2015,8 @@ npm install @puckeditor/core@^1
 ```
 
 - [ ] **Step 3: Implement `puck.config.tsx`**
+
+Typed with `Config<Props>` (per the puck skill's config-authoring guidance) so `fields` and `render` params stay in sync, and carrying `ai.instructions` on every free-text field — this is the config-level half of the content-fidelity guardrail (the other half is `ai.context` on the server handler in Task 18). These instructions are derived directly from this app's real constraint (no rewriting real CV content), not invented tone/brand rules.
 
 ```tsx
 // puck.config.tsx
@@ -1918,13 +2034,24 @@ const bulletsField = {
   arrayFields: { text: { type: 'textarea' as const } },
   defaultItemProps: { text: '' },
   getItemSummary: (item: BulletItem) => item.text || 'Bullet',
+  ai: { instructions: 'Only add new bullets. Never edit or rewrite the text of an existing bullet.' },
 };
 
-export const puckConfig: Config = {
+type Props = {
+  Job: { company: string; dates: string; role: string; bullets: BulletItem[] };
+  Placeholder: { company: string; note: string };
+  Education: { school: string; dates: string; degree: string; bullets: BulletItem[]; dissertation: string };
+  CertificateGroup: { heading: string; certificates: { text: string; accent: boolean }[] };
+  GalleryItem: { itemType: 'photo' | 'video'; image: string; videoUrl: string };
+  Note: { text: string };
+};
+
+export const puckConfig: Config<Props> = {
   components: {
     Job: {
+      ai: { instructions: 'One entry per job. Placement follows the order the editor arranges them in.' },
       fields: {
-        company: { type: 'text' },
+        company: { type: 'text', ai: { instructions: 'A real employer name — never invent or alter it.' } },
         dates: { type: 'text' },
         role: { type: 'text' },
         bullets: bulletsField,
@@ -1937,7 +2064,7 @@ export const puckConfig: Config = {
             company: props.company,
             dates: props.dates,
             role: props.role || undefined,
-            bullets: (props.bullets as BulletItem[]).map((b) => b.text),
+            bullets: props.bullets.map((b) => b.text),
           }}
         />
       ),
@@ -1954,7 +2081,7 @@ export const puckConfig: Config = {
     },
     Education: {
       fields: {
-        school: { type: 'text' },
+        school: { type: 'text', ai: { instructions: 'A real institution name — never invent or alter it.' } },
         dates: { type: 'text' },
         degree: { type: 'text' },
         bullets: bulletsField,
@@ -1968,7 +2095,7 @@ export const puckConfig: Config = {
             school: props.school,
             dates: props.dates,
             degree: props.degree,
-            bullets: (props.bullets as BulletItem[]).map((b) => b.text),
+            bullets: props.bullets.map((b) => b.text),
             dissertation: props.dissertation || undefined,
           }}
         />
@@ -1991,6 +2118,7 @@ export const puckConfig: Config = {
           },
           defaultItemProps: { text: '', accent: false },
           getItemSummary: (item: { text: string }) => item.text || 'Certificate',
+          ai: { instructions: 'Only add new certificates. Never edit or rewrite an existing certificate\'s text.' },
         },
       },
       defaultProps: { heading: 'Certificates', certificates: [] },
@@ -2026,7 +2154,7 @@ export const puckConfig: Config = {
     },
     Note: {
       fields: {
-        text: { type: 'textarea' },
+        text: { type: 'textarea', ai: { instructions: 'Only add new notes. Never rewrite existing note text.' } },
       },
       defaultProps: { text: '' },
       render: (props) => <Note text={props.text} />,
@@ -2035,10 +2163,12 @@ export const puckConfig: Config = {
 };
 ```
 
+Note this task deliberately does not set `chat.examplePrompts` anywhere — per the puck skill, invented example prompts read as first-party product copy and should only be authored by the site owner, not generated.
+
 - [ ] **Step 4: Verify it type-checks**
 
 Run: `npm run check`
-Expected: no new type errors from `puck.config.tsx` (this file has no test of its own — its correctness is exercised through `puckAdapter.test.ts` in Task 16 and manually in Task 17).
+Expected: no new type errors from `puck.config.tsx` (this file has no test of its own — its correctness is exercised through `puckAdapter.test.ts` in Task 16 and manually in Task 17). If the installed version doesn't recognize a field-level `ai` key (it's a newer addition than some other Puck APIs), fall back to omitting it there and rely on the handler-level `ai.context` in Task 18 alone — note this in the task report if it happens.
 
 - [ ] **Step 5: Commit**
 
@@ -2256,13 +2386,14 @@ export async function saveTabBlocksAction(
 
 - [ ] **Step 2: Implement `PuckAdmin.tsx`**
 
+Per the puck skill's Next.js App Router guidance: `<Puck>`'s CSS must be imported from the _server_ parent page, not this client child, so it ends up in the document Puck syncs into its preview iframe — importing it here would leave the canvas unstyled. The import lives in `app/admin/page.tsx` (Step 3), not this file.
+
 ```tsx
 // src/components/PuckAdmin.tsx
 'use client';
 
 import { useState } from 'react';
 import { Puck } from '@puckeditor/core';
-import '@puckeditor/core/puck.css';
 import { puckConfig } from '../../puck.config';
 import { blocksToPuckData, puckDataToBlocks } from '../lib/puckAdapter';
 import { saveTabBlocksAction } from '../../app/admin/actions';
@@ -2312,8 +2443,18 @@ export function PuckAdmin({ initialData }: Props) {
       {status === 'error' && <p>Save failed.</p>}
       {/* key={activeKey} forces a remount with fresh `data` when switching tabs —
           Puck owns its state internally after mount, so this is how a new
-          initial document gets loaded. */}
-      <Puck key={activeKey} config={puckConfig} data={blocksToPuckData(activeTab.blocks)} onPublish={handlePublish} />
+          initial document gets loaded. `data` must not change after `<Puck>`
+          mounts (per the puck skill) — remounting via `key` is the supported
+          way to load a different document, not a workaround. */}
+      {/* height leaves room for the "Signed in as" line above it — <Puck> defaults
+          to 100dvh, which would otherwise push part of the editor off-screen. */}
+      <Puck
+        key={activeKey}
+        config={puckConfig}
+        data={blocksToPuckData(activeTab.blocks)}
+        onPublish={handlePublish}
+        height="calc(100dvh - 3rem)"
+      />
     </div>
   );
 }
@@ -2321,11 +2462,16 @@ export function PuckAdmin({ initialData }: Props) {
 
 - [ ] **Step 3: Update `app/admin/page.tsx`**
 
+`dynamic = 'force-dynamic'` and the `puck.css` import both belong here per the puck skill's Next.js App Router guidance — the editor route must not be statically rendered (it needs a fresh session/content read every visit), and the CSS import must live in this server page so it reaches the iframe Puck syncs styles into.
+
 ```tsx
 // app/admin/page.tsx
+import '@puckeditor/core/puck.css';
 import { auth } from '../../auth';
 import { getPortfolioContent } from '../../src/lib/portfolioContent';
 import { PuckAdmin } from '../../src/components/PuckAdmin';
+
+export const dynamic = 'force-dynamic';
 
 export default async function AdminPage() {
   const session = await auth();
@@ -2424,7 +2570,14 @@ async function handleRequest(request: Request) {
   // Claude BYOK was confirmed to work; otherwise omit both and Puck uses its
   // own default model and credits.
   return puckHandler(request, {
-    ai: { context: AI_CONTEXT },
+    ai: {
+      context: AI_CONTEXT,
+      // Locks Puck AI to composing from this app's own config components —
+      // "design" mode can invent new custom-styled sections, which would
+      // both risk drifting off the fixed navy/graphite/mint design tokens
+      // and bypass the per-field ai.instructions guardrails in puck.config.tsx.
+      mode: 'assembly',
+    },
   });
 }
 
@@ -2433,14 +2586,20 @@ export const GET = handleRequest;
 export const POST = handleRequest;
 ```
 
-- [ ] **Step 4: Wire the AI plugin into `PuckAdmin.tsx`**
+- [ ] **Step 4: Wire the AI plugin into `PuckAdmin.tsx` and its CSS into `app/admin/page.tsx`**
+
+Same reasoning as Task 17 Step 2/3: the AI plugin's stylesheet needs to reach the server parent, not the client child, for the same iframe-syncing reason as Puck's core CSS.
 
 ```tsx
 // src/components/PuckAdmin.tsx — add these two imports and the plugin instance
 import { createAiPlugin } from '@puckeditor/plugin-ai';
-import '@puckeditor/plugin-ai/styles.css';
 
 const aiPlugin = createAiPlugin();
+```
+
+```tsx
+// app/admin/page.tsx — add this import alongside the existing puck.css import
+import '@puckeditor/plugin-ai/styles.css';
 ```
 
 Then add `plugins={[aiPlugin]}` to the `<Puck>` element from Task 17:
