@@ -10,9 +10,17 @@ const PHOTO_ICON_PATHS =
 const VIDEO_ICON_PATHS =
   '<path d="m22 8-6 4 6 4V8Z"/><rect x="2" y="6" width="14" height="12" rx="2"/>';
 
+function isSafeHttpUrl(url: string): boolean {
+  try {
+    return ['http:', 'https:'].includes(new URL(url).protocol);
+  } catch {
+    return false;
+  }
+}
+
 export function GalleryTile({ item }: Props) {
   if (item.itemType === 'video') {
-    if (item.videoUrl) {
+    if (item.videoUrl && isSafeHttpUrl(item.videoUrl)) {
       return (
         <a
           className="gallery-tile"
@@ -24,7 +32,7 @@ export function GalleryTile({ item }: Props) {
           {item.image ? (
             <img
               src={item.image}
-              alt="Gallery item"
+              alt=""
               style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'var(--radius-md)' }}
             />
           ) : (
@@ -63,7 +71,7 @@ export function GalleryTile({ item }: Props) {
   if (item.image) {
     return (
       <div className="gallery-tile" style={{ padding: 0, overflow: 'hidden' }}>
-        <img src={item.image} alt="Gallery item" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        <img src={item.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
       </div>
     );
   }
