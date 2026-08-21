@@ -9,7 +9,10 @@ export function Hero({ hero }: Props) {
   const phoneHref = hero.phone && `tel:${hero.phone.replace(/[^\d+]/g, '')}`;
   const emailHref = hero.email && `mailto:${hero.email}`;
   const linkedinHref =
-    hero.linkedin && (/^https?:\/\//.test(hero.linkedin) ? hero.linkedin : `https://${hero.linkedin}`);
+    hero.linkedin &&
+    (/^https?:\/\//.test(hero.linkedin)
+      ? hero.linkedin
+      : `https://${hero.linkedin}`);
   const locationHref =
     hero.location &&
     `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(hero.location)}`;

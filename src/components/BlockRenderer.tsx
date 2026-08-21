@@ -1,10 +1,10 @@
 import type { Block } from '../types';
-import { JobCard } from './JobCard';
-import { PlaceholderCard } from './PlaceholderCard';
-import { EducationCard } from './EducationCard';
 import { CertificateGroup } from './CertificateGroup';
+import { EducationCard } from './EducationCard';
 import { GalleryTile } from './GalleryTile';
+import { JobCard } from './JobCard';
 import { Note } from './Note';
+import { PlaceholderCard } from './PlaceholderCard';
 
 interface Props {
   block: Block;

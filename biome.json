@@ -6,7 +6,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!!**/dist", "!!**/*.astro", "!!package-lock.json"]
+    "includes": ["**", "!!**/out", "!!**/.next", "!!package-lock.json"]
   },
   "formatter": {
     "enabled": true,

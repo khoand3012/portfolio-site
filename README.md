@@ -1,119 +1,95 @@
 # Portfolio Site
 
-A single-page CV/portfolio site, built with [Astro](https://astro.build) as
-plain static HTML (no client-side framework shipped), driven by one JSON
-content file.
+A single-page CV/portfolio site, built with [Next.js](https://nextjs.org)
+(App Router), driven by one JSON content file — with a live admin panel
+(Puck) landing in a later phase of this repo's migration.
 
 ## How it works
 
 ```
-content/portfolio.json      ← all editable text (source of truth)
+content/portfolio.json      ← all editable text (source of truth for now)
         │
-        │  npm run build  (astro build)
+        │  npm run build  (next build)
         ▼
-src/pages/index.astro       ← imports the JSON, composes components
-src/components/*.astro      ← Hero, TabNav, JobCard, EducationCard, GalleryTile, ...
+app/page.tsx                 ← loads content via src/lib/portfolioContent.ts
+src/components/*.tsx          ← Hero, TabbedContent, BlockRenderer, JobCard, ...
         │
         ▼
-    dist/index.html         ← generated static page — do not hand-edit, do not commit
+    out/index.html            ← generated static page — do not hand-edit, do not commit
 ```
 
-- `content/portfolio.json` holds every piece of text on the page: hero info,
-  the seven tabs (Teaching, International Education, Testing, Academic
-  Background, Publications, Talks, Photos & Videos), job entries, education,
-  certificates, gallery items.
-- `src/pages/index.astro` imports that JSON directly and renders the page by
-  composing small components in `src/components/`. Astro auto-escapes
-  `{expression}` interpolations (like JSX), so there's no manual HTML-escaping
-  code to maintain.
-- `src/styles/global.css` is the site's one stylesheet (colors, typography,
-  layout) — imported once by `index.astro`, not scoped per component.
-- `dist/` is Astro's **generated build output** (gitignored). Don't hand-edit
-  anything in it — edit `content/portfolio.json` or the components instead,
-  then rebuild.
+- `content/portfolio.json` holds every piece of text on the page, restructured
+  into per-tab arrays of typed blocks (`job`, `placeholder`, `education`,
+  `certificate-group`, `gallery-item`, `note`) — see `src/types.ts`.
+- `app/page.tsx` loads that data via `getPortfolioContent()` and renders it by
+  composing `src/components/*.tsx`, dispatching each block through
+  `BlockRenderer`.
+- `src/styles/global.css` is still the site's one stylesheet — imported once by
+  `app/layout.tsx`, not scoped per component.
+- `out/` is Next.js's static export output (gitignored). Don't hand-edit
+  anything in it.
 
 ## Editing content
 
 Edit `content/portfolio.json`, then run:
 
 ```sh
-npm run build      # writes dist/index.html
-npm run preview    # serves dist/ locally to check it
+npm run build          # writes out/index.html
+npx serve out           # serve out/ locally to check it
 ```
 
-or `npm run dev` for a live-reloading dev server while iterating on the
-`.astro` components themselves.
-
-(This repo previously wired up Sveltia CMS with a Google-sign-in-gated admin
-panel for non-technical editing. It was removed — see git history around
-"Remove Sveltia CMS" if picking that back up, or a similar approach, is ever
-wanted again.)
+or `npm run dev` for a live-reloading dev server while iterating on components.
 
 ## Deploying
 
-Push to GitHub, then connect the repo to [Netlify](https://netlify.com) as a
-new site. `netlify.toml` already sets:
+Push to GitHub, then connect the repo to [Netlify](https://netlify.com).
+`netlify.toml` sets:
 
 ```toml
 [build]
   command = "npm run build"
-  publish = "dist"
+  publish = "out"
 ```
 
-Netlify runs `npm install && npm run build` on every push, regenerating
-`dist/` automatically. This is a plain static build — no adapter, no server
-rendering.
+This is currently a plain static export — no adapter, no server rendering.
+(A later phase of this migration adds a live admin panel, which will require
+switching this to server rendering via `@netlify/plugin-nextjs` — see
+`docs/superpowers/specs/2026-08-20-nextjs-live-admin-panel-design.md`.)
 
-## TypeScript & Biome
-
-The whole project (Astro components, `src/types.ts`) is TypeScript, checked
-with `astro check` (Astro files) and `tsc --noEmit` — run both together
-with:
+## TypeScript, testing, and Biome
 
 ```sh
-npm run check
+npm run check   # tsc --noEmit
+npm run test    # vitest run
 ```
 
-`src/types.ts` defines `PortfolioData`, matching `content/portfolio.json`'s
-shape; `src/pages/index.astro` casts the JSON import to it. Keep this type
-in sync with the JSON when the schema changes.
-
-Linting and formatting use [Biome](https://biomejs.dev):
+`src/types.ts` defines `PortfolioData`/`Block`, matching `content/portfolio.json`'s
+shape — keep it in sync when the schema changes.
 
 ```sh
 npm run lint        # report issues, no changes
 npm run lint:fix     # apply safe fixes + formatting
 ```
 
-**`.astro` files are excluded from Biome** (see `biome.json`). Biome's Astro
-support is still experimental and doesn't yet see that variables
-destructured in a component's frontmatter are used by the template markup
-below it — it flags nearly every props destructure as "unused", and
-`--write` would delete real, working code. Re-evaluate this exclusion once
-Biome's Astro support matures. `package-lock.json` (machine-generated) is
-excluded too.
-
 ## Project structure
 
 ```
 .
 ├── content/
-│   └── portfolio.json     Editable content — the source of truth
+│   └── portfolio.json     Editable content — the source of truth (for now)
+├── app/
+│   ├── layout.tsx           Root layout — imports global.css, fonts
+│   └── page.tsx              Loads portfolio content, composes the page
 ├── src/
-│   ├── pages/
-│   │   └── index.astro     Imports portfolio.json, composes the page
-│   ├── components/
-│   │   ├── Hero.astro, MetaItem.astro, TabNav.astro,
-│   │   └── JobCard.astro, PlaceholderCard.astro, EducationCard.astro, GalleryTile.astro
+│   ├── components/           Hero, TabbedContent, BlockRenderer, JobCard, ...
+│   ├── lib/
+│   │   └── portfolioContent.ts   getPortfolioContent()
 │   ├── styles/
-│   │   └── global.css      The site's one stylesheet
-│   └── types.ts             PortfolioData — matches content/portfolio.json's shape
-├── astro.config.mjs      output: 'static', no adapter
-├── tsconfig.json          extends astro/tsconfigs/strict
-├── biome.json             Lint/format config — see "TypeScript & Biome"
-├── netlify.toml          Build command (npm run build) + publish dir (dist)
+│   │   └── global.css         The site's one stylesheet
+│   └── types.ts                PortfolioData/Block — matches content/portfolio.json
+├── next.config.js         output: 'export' (static, for now)
+├── tsconfig.json
+├── biome.json
+├── netlify.toml            Build command (npm run build) + publish dir (out)
 └── package.json
 ```
-
-`dist/` (Astro's build output) is gitignored — Netlify generates it fresh on
-every deploy via `netlify.toml`'s build command.

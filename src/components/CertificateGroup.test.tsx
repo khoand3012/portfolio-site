@@ -17,8 +17,13 @@ describe('CertificateGroup', () => {
       />,
     );
 
-    expect(screen.getByRole('heading', { name: 'Certificates' })).toBeInTheDocument();
-    expect(screen.getByText('IELTS Academic — 8.0')).toHaveClass('tag', 'accent');
+    expect(
+      screen.getByRole('heading', { name: 'Certificates' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('IELTS Academic — 8.0')).toHaveClass(
+      'tag',
+      'accent',
+    );
     expect(screen.getByText('HSK Level 3')).toHaveClass('tag');
     expect(screen.getByText('HSK Level 3')).not.toHaveClass('accent');
   });

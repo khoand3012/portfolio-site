@@ -16,7 +16,9 @@ describe('Hero', () => {
       />,
     );
 
-    expect(screen.getByRole('heading', { name: 'Truong Nam Nguyen' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Truong Nam Nguyen' }),
+    ).toBeInTheDocument();
     const emailLink = screen.getByRole('link');
     expect(emailLink).toHaveAttribute('href', 'mailto:truongnam307@gmail.com');
     // No phone/linkedin/location were provided, so only one meta link renders.

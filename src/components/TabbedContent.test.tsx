@@ -9,8 +9,16 @@ describe('TabbedContent', () => {
     render(
       <TabbedContent
         tabs={[
-          { slug: 'a', label: 'A', blocks: [{ type: 'note', text: 'Panel A' }] },
-          { slug: 'b', label: 'B', blocks: [{ type: 'note', text: 'Panel B' }] },
+          {
+            slug: 'a',
+            label: 'A',
+            blocks: [{ type: 'note', text: 'Panel A' }],
+          },
+          {
+            slug: 'b',
+            label: 'B',
+            blocks: [{ type: 'note', text: 'Panel B' }],
+          },
         ]}
       />,
     );

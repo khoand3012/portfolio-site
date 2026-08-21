@@ -51,7 +51,9 @@ export function TabbedContent({ tabs }: Props) {
                   ))}
                 </div>
               ) : (
-                tab.blocks.map((block, i) => <BlockRenderer key={i} block={block} />)
+                tab.blocks.map((block, i) => (
+                  <BlockRenderer key={i} block={block} />
+                ))
               )}
             </section>
           ))}

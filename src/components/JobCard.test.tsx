@@ -12,7 +12,13 @@ describe('JobCard', () => {
   it('renders bullets when present', () => {
     render(
       <JobCard
-        job={{ type: 'job', company: 'Acme', dates: '2020', role: 'Engineer', bullets: ['Did a thing.'] }}
+        job={{
+          type: 'job',
+          company: 'Acme',
+          dates: '2020',
+          role: 'Engineer',
+          bullets: ['Did a thing.'],
+        }}
       />,
     );
     expect(screen.getByText('Did a thing.')).toBeInTheDocument();

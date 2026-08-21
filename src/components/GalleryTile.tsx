@@ -33,7 +33,12 @@ export function GalleryTile({ item }: Props) {
             <img
               src={item.image}
               alt=""
-              style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'var(--radius-md)' }}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                borderRadius: 'var(--radius-md)',
+              }}
             />
           ) : (
             <>
@@ -71,7 +76,11 @@ export function GalleryTile({ item }: Props) {
   if (item.image) {
     return (
       <div className="gallery-tile" style={{ padding: 0, overflow: 'hidden' }}>
-        <img src={item.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        <img
+          src={item.image}
+          alt=""
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+        />
       </div>
     );
   }

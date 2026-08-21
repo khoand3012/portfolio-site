@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { BlockRenderer } from './BlockRenderer';
 import type { Block } from '../types';
+import { BlockRenderer } from './BlockRenderer';
 
 describe('BlockRenderer', () => {
   it('dispatches a note block to a rendered <div class="placeholder">', () => {

@@ -1,7 +1,7 @@
-import type { PortfolioData } from '../src/types';
 import { Hero } from '../src/components/Hero';
 import { TabbedContent } from '../src/components/TabbedContent';
 import { getPortfolioContent } from '../src/lib/portfolioContent';
+import type { PortfolioData } from '../src/types';
 
 const TAB_ORDER: { key: keyof PortfolioData['tabs']; slug: string }[] = [
   { key: 'teaching', slug: 'teaching' },
