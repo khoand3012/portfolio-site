@@ -5,9 +5,9 @@ node_modules/
 # Local Claude Code config, symlinked skills, and worktrees
 .claude/
 
-# Astro build output and cache
-dist/
-.astro/
+# Next.js build output and cache
+.next/
+out/
 
 # Local Netlify folder
 .netlify
