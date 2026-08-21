@@ -13,14 +13,31 @@ export function AdminEditorPlaceholder({ initialData }: Props) {
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>(
     'idle',
   );
+  const [errorMessage, setErrorMessage] = useState('');
 
   async function handleSave() {
     setStatus('saving');
+
+    // Parsing and saving fail for different reasons, and this placeholder is
+    // likely the only diagnostic surface available the first time this ships
+    // to a real environment — keep the messages distinct rather than
+    // collapsing both into one generic "save failed".
+    let parsed: PortfolioData;
     try {
-      const parsed = JSON.parse(text) as PortfolioData;
+      parsed = JSON.parse(text) as PortfolioData;
+    } catch {
+      setErrorMessage("Save failed — the text isn't valid JSON.");
+      setStatus('error');
+      return;
+    }
+
+    try {
       await saveContentAction(parsed);
       setStatus('saved');
-    } catch {
+    } catch (error) {
+      setErrorMessage(
+        `Save failed: ${error instanceof Error ? error.message : 'unknown error'}`,
+      );
       setStatus('error');
     }
   }
@@ -38,7 +55,7 @@ export function AdminEditorPlaceholder({ initialData }: Props) {
       </button>
       {status === 'saving' && <p>Saving…</p>}
       {status === 'saved' && <p>Saved.</p>}
-      {status === 'error' && <p>Save failed — check the JSON is valid.</p>}
+      {status === 'error' && <p>{errorMessage}</p>}
     </div>
   );
 }

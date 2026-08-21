@@ -1546,6 +1546,12 @@ Expected: FAIL — module doesn't exist.
 
 - [ ] **Step 3: Implement `blobStore.ts`**
 
+> **Note (added after Phase 2's final review):** the code block below has the
+> bug the review caught — `getStore(storeName)` in the real-Blobs branch must
+> read with `.get(key, { type: 'json' })`, not a bare `.get(key)`, or callers
+> get a raw JSON string instead of a parsed object. See the fixed version in
+> `src/lib/blobStore.ts` if Phase 3 references this section.
+
 ```ts
 // src/lib/blobStore.ts
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';

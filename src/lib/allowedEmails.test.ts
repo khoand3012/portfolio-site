@@ -24,4 +24,10 @@ describe('isAllowedEmail', () => {
   it('rejects when there is no email', () => {
     expect(isAllowedEmail(null, 'owner@example.com')).toBe(false);
   });
+
+  it('allows an email with leading/trailing whitespace', () => {
+    expect(isAllowedEmail('  owner@example.com  ', 'owner@example.com')).toBe(
+      true,
+    );
+  });
 });

@@ -3,6 +3,11 @@ import { TabbedContent } from '../src/components/TabbedContent';
 import { getPortfolioContent } from '../src/lib/portfolioContent';
 import type { PortfolioData } from '../src/types';
 
+// Without this, Next.js statically prerenders this page at build time, so
+// saved admin edits never reach the deployed public page — the entire point
+// of the admin panel. Force it to render per-request instead.
+export const dynamic = 'force-dynamic';
+
 const TAB_ORDER: { key: keyof PortfolioData['tabs']; slug: string }[] = [
   { key: 'teaching', slug: 'teaching' },
   { key: 'internationalEducation', slug: 'intl-education' },

@@ -7,5 +7,5 @@ export function isAllowedEmail(
     .split(',')
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean);
-  return allowed.includes(email.toLowerCase());
+  return allowed.includes(email.trim().toLowerCase());
 }
