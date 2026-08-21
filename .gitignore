@@ -2,6 +2,9 @@ node_modules/
 .DS_Store
 .env
 
+# Local Claude Code config, symlinked skills, and worktrees
+.claude/
+
 # Astro build output and cache
 dist/
 .astro/
