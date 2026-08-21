@@ -34,7 +34,7 @@ describe('portfolioContent', () => {
 
     const historyKeys = [...memoryStore.keys()].filter((k) => k.startsWith('history/'));
     expect(historyKeys).toHaveLength(1);
-    expect(memoryStore.get(historyKeys[0])).toEqual(updated);
+    expect(memoryStore.get(historyKeys[0]!)).toEqual(updated);
   });
 
   it('falls back to the seed file if the store read throws, rather than crashing', async () => {
