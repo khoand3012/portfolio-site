@@ -28,6 +28,7 @@
   },
   "dependencies": {
     "@netlify/blobs": "^8.2.0",
+    "@puckeditor/core": "^0.23.0",
     "next": "^15.5.23",
     "next-auth": "^5.0.0-beta.32",
     "react": "^18.3.1",
