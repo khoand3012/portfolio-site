@@ -1,8 +1,16 @@
+import '@puckeditor/core/puck.css';
 import { redirect } from 'next/navigation';
 import { auth } from '../../auth';
-import { AdminEditorPlaceholder } from '../../src/components/AdminEditorPlaceholder';
+import { PuckAdmin } from '../../src/components/PuckAdmin';
 import { isAllowedEmail } from '../../src/lib/allowedEmails';
 import { getPortfolioContent } from '../../src/lib/portfolioContent';
+
+// The editor needs a fresh session/content read on every visit — it must not
+// be statically rendered. (Puck's CSS import above must live in this server
+// page, not the client PuckAdmin component, so it ends up in the document
+// Puck syncs into its preview iframe — see the puck skill's Next.js App
+// Router guidance.)
+export const dynamic = 'force-dynamic';
 
 export default async function AdminPage() {
   const session = await auth();
@@ -20,9 +28,9 @@ export default async function AdminPage() {
   const data = await getPortfolioContent();
 
   return (
-    <div className="wrap">
-      <p>Signed in as {session?.user?.email}</p>
-      <AdminEditorPlaceholder initialData={data} />
+    <div>
+      <p className="wrap">Signed in as {session?.user?.email}</p>
+      <PuckAdmin initialData={data} />
     </div>
   );
 }
