@@ -41,6 +41,7 @@ export function PuckAdmin({ initialData }: Props) {
     try {
       const blocks = puckDataToBlocks(data);
       await saveTabBlocksAction(activeKey, blocks);
+      setErrorMessage('');
       setStatus('saved');
     } catch (error) {
       setErrorMessage(
