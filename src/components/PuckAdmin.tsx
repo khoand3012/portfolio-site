@@ -2,6 +2,7 @@
 
 import type { Data } from '@puckeditor/core';
 import { Puck } from '@puckeditor/core';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { saveTabBlocksAction } from '../../app/admin/actions';
 import { puckConfig } from '../../puck.config';
@@ -23,6 +24,7 @@ interface Props {
 }
 
 export function PuckAdmin({ initialData }: Props) {
+  const router = useRouter();
   // biome-ignore lint/style/noNonNullAssertion: TAB_ORDER is a fixed, non-empty literal declared above.
   const [activeKey, setActiveKey] = useState(TAB_ORDER[0]!.key);
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>(
@@ -43,6 +45,18 @@ export function PuckAdmin({ initialData }: Props) {
       await saveTabBlocksAction(activeKey, blocks);
       setErrorMessage('');
       setStatus('saved');
+      // `initialData` is a server-component prop, fetched once when
+      // AdminPage rendered — it does not update just because a save
+      // succeeded. Without this, switching away from the just-saved tab
+      // and back re-mounts <Puck> (via key={activeKey}) with the SAME
+      // stale `initialData.tabs[activeKey].blocks`, showing pre-publish
+      // content even though the save genuinely succeeded. router.refresh()
+      // re-runs AdminPage (a Server Component, already
+      // `dynamic = 'force-dynamic'` per Ruling A) so it re-calls
+      // getPortfolioContent() and this component receives fresh
+      // `initialData` on the next render — without a full page reload or
+      // losing the "Saved." status message set above.
+      router.refresh();
     } catch (error) {
       setErrorMessage(
         `Save failed: ${error instanceof Error ? error.message : 'unknown error'}`,
