@@ -6,16 +6,17 @@
 // format; Task 16's adapter converts between the two. See Task 15's report
 // for the full rationale.
 //
-// Field-level and component-level `ai` keys (ai.instructions etc.) are
-// intentionally omitted: at the installed @puckeditor/core@0.23.0, the `ai`
-// parameter is not part of the field or component config types (BaseField
-// and ComponentConfigInternal have no `ai` member; ComponentConfigExtensions
-// — the declared extension point for component-level `ai` — is an empty
-// interface until `@puckeditor/plugin-ai`/`@puckeditor/cloud-client`
-// augment it via declaration merging). Those packages aren't installed by
-// this task (that's Task 18). Adding `ai` now would be inert config that
-// TypeScript may not even flag as an error, so it's left out entirely and
-// deferred to Task 18.
+// Field-level and component-level `ai` keys: Task 15 left these out because
+// the installed @puckeditor/core@0.23.0 alone doesn't declare an `ai` member
+// on BaseField/ComponentConfigExtensions. Task 18 installed
+// @puckeditor/plugin-ai, which augments those interfaces via declaration
+// merging (see its dist/index.d.ts: `declare module "@puckeditor/core"`),
+// so `ai.instructions` below is real, checked config. Each instruction is a
+// content-fidelity guardrail: Puck AI may scaffold new blocks/bullets/
+// certificates but must never rewrite the real CV content already there —
+// see this project's CLAUDE.md on content fidelity and the Puck AI handler's
+// `ai.context` in app/api/puck/[...all]/route.ts for the other half of this
+// guardrail.
 import type { Config } from '@puckeditor/core';
 import { CertificateGroup } from './src/components/CertificateGroup';
 import { EducationCard } from './src/components/EducationCard';
@@ -30,6 +31,10 @@ const bulletsField = {
   arrayFields: { text: { type: 'textarea' as const } },
   defaultItemProps: { text: '' },
   getItemSummary: (item: BulletItem) => item.text || 'Bullet',
+  ai: {
+    instructions:
+      'Only add new bullets. Never edit or rewrite the text of an existing bullet.',
+  },
 };
 
 type Props = {
@@ -53,8 +58,17 @@ type Props = {
 export const puckConfig: Config<Props> = {
   components: {
     Job: {
+      ai: {
+        instructions:
+          'One entry per job. Placement follows the order the editor arranges them in.',
+      },
       fields: {
-        company: { type: 'text' },
+        company: {
+          type: 'text',
+          ai: {
+            instructions: 'A real employer name — never invent or alter it.',
+          },
+        },
         dates: { type: 'text' },
         role: { type: 'text' },
         bullets: bulletsField,
@@ -90,7 +104,12 @@ export const puckConfig: Config<Props> = {
     },
     Education: {
       fields: {
-        school: { type: 'text' },
+        school: {
+          type: 'text',
+          ai: {
+            instructions: 'A real institution name — never invent or alter it.',
+          },
+        },
         dates: { type: 'text' },
         degree: { type: 'text' },
         bullets: bulletsField,
@@ -134,6 +153,10 @@ export const puckConfig: Config<Props> = {
           defaultItemProps: { text: '', accent: false },
           getItemSummary: (item: { text: string }) =>
             item.text || 'Certificate',
+          ai: {
+            instructions:
+              "Only add new certificates. Never edit or rewrite an existing certificate's text.",
+          },
         },
       },
       defaultProps: { heading: 'Certificates', certificates: [] },
@@ -173,7 +196,13 @@ export const puckConfig: Config<Props> = {
     },
     Note: {
       fields: {
-        text: { type: 'textarea' },
+        text: {
+          type: 'textarea',
+          ai: {
+            instructions:
+              'Only add new notes. Never rewrite existing note text.',
+          },
+        },
       },
       defaultProps: { text: '' },
       render: (props) => <Note text={props.text} />,

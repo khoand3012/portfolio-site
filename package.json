@@ -28,7 +28,9 @@
   },
   "dependencies": {
     "@netlify/blobs": "^8.2.0",
+    "@puckeditor/cloud-client": "^0.8.2",
     "@puckeditor/core": "^0.23.0",
+    "@puckeditor/plugin-ai": "^0.8.2",
     "next": "^15.5.23",
     "next-auth": "^5.0.0-beta.32",
     "react": "^18.3.1",

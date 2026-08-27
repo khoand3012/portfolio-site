@@ -2,12 +2,18 @@
 
 import type { Data } from '@puckeditor/core';
 import { Puck } from '@puckeditor/core';
+import { createAiPlugin } from '@puckeditor/plugin-ai';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { saveTabBlocksAction } from '../../app/admin/actions';
 import { puckConfig } from '../../puck.config';
 import { blocksToPuckData, puckDataToBlocks } from '../lib/puckAdapter';
 import type { PortfolioData } from '../types';
+
+// Never set `chat.examplePrompts` here — per the puck skill's AI guidance,
+// invented example prompts read as first-party product copy and should only
+// ever be authored by the site owner, not generated.
+const aiPlugin = createAiPlugin();
 
 const TAB_ORDER: { key: keyof PortfolioData['tabs']; label: string }[] = [
   { key: 'teaching', label: 'Teaching' },
@@ -101,6 +107,7 @@ export function PuckAdmin({ initialData }: Props) {
         config={puckConfig}
         data={blocksToPuckData(activeTab.blocks)}
         onPublish={handlePublish}
+        plugins={[aiPlugin]}
         height="calc(100dvh - 3rem)"
       />
     </div>
