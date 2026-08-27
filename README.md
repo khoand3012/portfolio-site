@@ -1,119 +1,169 @@
 # Portfolio Site
 
-A single-page CV/portfolio site, built with [Astro](https://astro.build) as
-plain static HTML (no client-side framework shipped), driven by one JSON
-content file.
+A single-page CV/portfolio site, built with [Next.js](https://nextjs.org)
+(App Router), with a live admin panel (Puck, at `/admin`) as the primary way
+to edit content.
 
 ## How it works
 
 ```
-content/portfolio.json      ← all editable text (source of truth)
-        │
-        │  npm run build  (astro build)
+Netlify Blobs (or .local-blobs/ in dev)   ← live content — current.json + history snapshots
+        │           ▲
+        │           │  saved from
+        │      app/admin/  (Puck editor, Google-OAuth gated)
         ▼
-src/pages/index.astro       ← imports the JSON, composes components
-src/components/*.astro      ← Hero, TabNav, JobCard, EducationCard, GalleryTile, ...
+app/page.tsx                 ← loads content via src/lib/portfolioContent.ts
+src/components/*.tsx          ← Hero, TabbedContent, BlockRenderer, JobCard, ...
         │
         ▼
-    dist/index.html         ← generated static page — do not hand-edit, do not commit
+   rendered per-request (Next.js server rendering on Netlify)
+
+content/portfolio.json    ← seed value only, read the first time nothing has been saved yet
 ```
 
-- `content/portfolio.json` holds every piece of text on the page: hero info,
-  the seven tabs (Teaching, International Education, Testing, Academic
-  Background, Publications, Talks, Photos & Videos), job entries, education,
-  certificates, gallery items.
-- `src/pages/index.astro` imports that JSON directly and renders the page by
-  composing small components in `src/components/`. Astro auto-escapes
-  `{expression}` interpolations (like JSX), so there's no manual HTML-escaping
-  code to maintain.
-- `src/styles/global.css` is the site's one stylesheet (colors, typography,
-  layout) — imported once by `index.astro`, not scoped per component.
-- `dist/` is Astro's **generated build output** (gitignored). Don't hand-edit
-  anything in it — edit `content/portfolio.json` or the components instead,
-  then rebuild.
+- Page content is a `PortfolioData` document — per-tab arrays of typed
+  blocks (`job`, `placeholder`, `education`, `certificate-group`,
+  `gallery-item`, `note`) — see `src/types.ts`. It lives in a Netlify Blobs
+  store (`src/lib/blobStore.ts` / `src/lib/portfolioContent.ts`), not in a
+  git-tracked file. `content/portfolio.json` only seeds that store the first
+  time it's ever read with nothing saved yet.
+- `app/page.tsx` loads the current content via `getPortfolioContent()` on
+  every request (`export const dynamic = 'force-dynamic'` — this page is
+  never statically prerendered, so saved admin edits show up immediately)
+  and renders it by composing `src/components/*.tsx`, dispatching each
+  block through `BlockRenderer`.
+- `src/styles/global.css` is still the site's one stylesheet — imported once by
+  `app/layout.tsx`, not scoped per component.
+- `.next/` is Next.js's build output (gitignored). Don't hand-edit anything
+  in it.
 
 ## Editing content
 
-Edit `content/portfolio.json`, then run:
+**`/admin` is the primary way to edit content now.** Sign in with an
+allow-listed Google account (see "Admin panel" below) and use the Puck
+drag-and-drop editor — changes save straight to the live content store and
+appear on the public page immediately.
+
+`content/portfolio.json` still exists, but only matters before the site's
+very first save: it's the seed value `getPortfolioContent()` falls back to
+when nothing has been saved yet (a from-scratch deploy), or if a content-store
+read fails outright. Once anything has been saved through `/admin`, editing
+this file has no effect on the deployed site.
 
 ```sh
-npm run build      # writes dist/index.html
-npm run preview    # serves dist/ locally to check it
+npm run dev                    # live-reloading dev server (uses .local-blobs/ locally)
+npm run build && npm start     # production build + server, for a closer check before deploying
 ```
 
-or `npm run dev` for a live-reloading dev server while iterating on the
-`.astro` components themselves.
+## Admin panel
 
-(This repo previously wired up Sveltia CMS with a Google-sign-in-gated admin
-panel for non-technical editing. It was removed — see git history around
-"Remove Sveltia CMS" if picking that back up, or a similar approach, is ever
-wanted again.)
+`/admin` is a live, drag-and-drop content editor built on
+[Puck](https://puckeditor.com), plus an optional AI chat panel (Puck AI) for
+scaffolding new content blocks. See
+`docs/superpowers/specs/2026-08-20-nextjs-live-admin-panel-design.md` for
+the full design rationale.
+
+**Access:** gated by Google OAuth (Auth.js v5 / `next-auth`, configured in
+`auth.ts`) plus an explicit email allow-list — only accounts listed in
+`ALLOWED_EMAILS` can sign in and reach `/admin` or save changes.
+
+**Env vars required** (set these in Netlify's site settings, and in a local
+`.env`/`.env.local` for `npm run dev`):
+
+| Variable | Purpose |
+| --- | --- |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google Cloud OAuth client credentials. Redirect URI is `<site-url>/api/auth/callback/google`. |
+| `ALLOWED_EMAILS` | Comma-separated list of Google account emails allowed to sign in and edit. |
+| `AUTH_SECRET` | Random secret Auth.js uses to sign sessions (`openssl rand -base64 32` or equivalent). `NEXTAUTH_SECRET` also works as a legacy-compatible alias. |
+| `PUCK_API_KEY` | From a [Puck Cloud](https://cloud.puckeditor.com/api-keys) account. Only needed for the Puck AI chat panel — drag-and-drop editing and saving work without it. |
+
+`auth.ts` hardcodes `trustHost: true` (Netlify isn't on Auth.js's short list
+of platforms it auto-trusts the `Host` header for by default, so without
+this Auth.js would reject every request as an untrusted host in
+production) — no separate `AUTH_TRUST_HOST` env var is needed for that,
+though setting `AUTH_TRUST_HOST=true` instead is an equivalent alternative
+if you'd rather configure it via the environment.
+
+Every save writes a `current.json` key plus a timestamped
+`history/<ISO-timestamp>.json` snapshot to the content store — a manual
+recovery net if an edit needs to be rolled back (nothing currently
+lists/restores old snapshots automatically, but they're there).
+
+Puck AI runs on Puck's own default (OpenAI-backed) model — Claude/Anthropic
+BYOK isn't supported at the platform level. A content-fidelity guardrail
+(system prompt + per-field instructions in `puck.config.tsx`) restricts it
+to scaffolding and rearranging content, never rewriting existing real text;
+this was live-tested against the real Puck Cloud API and holds, but it's a
+prompt-level guardrail, not a hard technical block — the real backstop is
+the history snapshots plus owner-only access.
 
 ## Deploying
 
-Push to GitHub, then connect the repo to [Netlify](https://netlify.com) as a
-new site. `netlify.toml` already sets:
+Push to GitHub, then connect the repo to [Netlify](https://netlify.com).
+`netlify.toml` sets:
 
 ```toml
 [build]
   command = "npm run build"
-  publish = "dist"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
 ```
 
-Netlify runs `npm install && npm run build` on every push, regenerating
-`dist/` automatically. This is a plain static build — no adapter, no server
-rendering.
+This is server rendering, not a static export — there's no `publish` dir;
+`@netlify/plugin-nextjs` handles Next.js's build output, API routes,
+middleware, and per-request rendering on Netlify automatically. Remember to
+also set the "Admin panel" env vars above in Netlify's site settings before
+the admin panel will work on a deployed site.
 
-## TypeScript & Biome
-
-The whole project (Astro components, `src/types.ts`) is TypeScript, checked
-with `astro check` (Astro files) and `tsc --noEmit` — run both together
-with:
+## TypeScript, testing, and Biome
 
 ```sh
-npm run check
+npm run check   # tsc --noEmit
+npm run test    # vitest run
 ```
 
-`src/types.ts` defines `PortfolioData`, matching `content/portfolio.json`'s
-shape; `src/pages/index.astro` casts the JSON import to it. Keep this type
-in sync with the JSON when the schema changes.
-
-Linting and formatting use [Biome](https://biomejs.dev):
+`src/types.ts` defines `PortfolioData`/`Block`, matching the shape of
+content read from the Blob store (and the `content/portfolio.json` seed) —
+keep it in sync when the schema changes, along with `app/admin/actions.ts`'s
+runtime validation and the `puck.config.tsx`/`src/lib/puckAdapter.ts` mapping
+that the admin panel relies on. See `CLAUDE.md` for the full picture.
 
 ```sh
 npm run lint        # report issues, no changes
 npm run lint:fix     # apply safe fixes + formatting
 ```
 
-**`.astro` files are excluded from Biome** (see `biome.json`). Biome's Astro
-support is still experimental and doesn't yet see that variables
-destructured in a component's frontmatter are used by the template markup
-below it — it flags nearly every props destructure as "unused", and
-`--write` would delete real, working code. Re-evaluate this exclusion once
-Biome's Astro support matures. `package-lock.json` (machine-generated) is
-excluded too.
-
 ## Project structure
 
 ```
 .
 ├── content/
-│   └── portfolio.json     Editable content — the source of truth
+│   └── portfolio.json       Seed content only — see "Editing content" above
+├── app/
+│   ├── layout.tsx             Root layout — imports global.css, fonts
+│   ├── page.tsx                Public page — loads content, composes the page (force-dynamic)
+│   ├── admin/
+│   │   ├── page.tsx              /admin — auth-gated, renders the Puck editor
+│   │   └── actions.ts             saveTabBlocksAction — validates + persists a tab's blocks
+│   └── api/
+│       └── puck/[...all]/route.ts   Puck AI's backend route (also auth-gated)
+├── auth.ts                  Auth.js (Google OAuth) config
+├── middleware.ts             Redirects unauthenticated /admin, /api/puck requests
+├── puck.config.tsx           Maps this app's components to Puck-editable fields
 ├── src/
-│   ├── pages/
-│   │   └── index.astro     Imports portfolio.json, composes the page
-│   ├── components/
-│   │   ├── Hero.astro, MetaItem.astro, TabNav.astro,
-│   │   └── JobCard.astro, PlaceholderCard.astro, EducationCard.astro, GalleryTile.astro
+│   ├── components/            Hero, TabbedContent, BlockRenderer, JobCard, PuckAdmin, ...
+│   ├── lib/
+│   │   ├── blobStore.ts          Netlify Blobs / local-file store abstraction
+│   │   ├── portfolioContent.ts    getPortfolioContent() / savePortfolioContent()
+│   │   ├── allowedEmails.ts       Email allow-list check (ALLOWED_EMAILS)
+│   │   └── puckAdapter.ts         Block[] <-> Puck data format conversion
 │   ├── styles/
-│   │   └── global.css      The site's one stylesheet
-│   └── types.ts             PortfolioData — matches content/portfolio.json's shape
-├── astro.config.mjs      output: 'static', no adapter
-├── tsconfig.json          extends astro/tsconfigs/strict
-├── biome.json             Lint/format config — see "TypeScript & Biome"
-├── netlify.toml          Build command (npm run build) + publish dir (dist)
+│   │   └── global.css            The site's one stylesheet
+│   └── types.ts                  PortfolioData/Block — see CLAUDE.md for what must stay in sync
+├── next.config.js           No output: 'export' — server rendering
+├── tsconfig.json
+├── biome.json
+├── netlify.toml              Build command (npm run build) + @netlify/plugin-nextjs
 └── package.json
 ```
-
-`dist/` (Astro's build output) is gitignored — Netlify generates it fresh on
-every deploy via `netlify.toml`'s build command.

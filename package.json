@@ -2,21 +2,38 @@
   "name": "truong-nam-portfolio",
   "private": true,
   "version": "1.0.0",
-  "description": "Truong Nam Nguyen portfolio — static site generated from content/portfolio.json",
+  "description": "Truong Nam Nguyen portfolio — Next.js site generated from content/portfolio.json",
   "scripts": {
-    "dev": "astro dev",
-    "build": "astro build",
-    "preview": "astro preview",
-    "check": "astro check",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "check": "tsc --noEmit",
+    "test": "vitest run",
     "lint": "biome check .",
     "lint:fix": "biome check --write ."
   },
-  "dependencies": {
-    "astro": "^7.2.3"
-  },
   "devDependencies": {
-    "@astrojs/check": "^0.9.10",
     "@biomejs/biome": "^2.5.9",
-    "typescript": "^5.9.3"
+    "@netlify/plugin-nextjs": "^5.15.13",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.5",
+    "@types/node": "20.17.6",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^4.7.0",
+    "jsdom": "^25.0.1",
+    "typescript": "^5.9.3",
+    "vitest": "^2.1.9"
+  },
+  "dependencies": {
+    "@netlify/blobs": "^8.2.0",
+    "@puckeditor/cloud-client": "^0.8.2",
+    "@puckeditor/core": "^0.23.0",
+    "@puckeditor/plugin-ai": "^0.8.2",
+    "next": "^15.5.23",
+    "next-auth": "^5.0.0-beta.32",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   }
 }

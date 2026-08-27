@@ -1,7 +1,7 @@
-// Shape of content/portfolio.json. Keep in sync with that file and with
-// public/admin/config.yml's field names — see CLAUDE.md.
+// Shape of content/portfolio.json. Keep in sync with that file — see CLAUDE.md.
 
 export interface Job {
+  type: 'job';
   company: string;
   dates: string;
   role?: string;
@@ -9,11 +9,13 @@ export interface Job {
 }
 
 export interface PlaceholderEntry {
+  type: 'placeholder';
   company: string;
   note: string;
 }
 
 export interface Education {
+  type: 'education';
   school: string;
   dates: string;
   degree: string;
@@ -26,13 +28,33 @@ export interface Certificate {
   accent?: boolean;
 }
 
+export interface CertificateGroupBlock {
+  type: 'certificate-group';
+  heading: string;
+  certificates: Certificate[];
+}
+
 export type GalleryItemType = 'photo' | 'video';
 
-export interface GalleryItem {
-  type: GalleryItemType;
+export interface GalleryItemBlock {
+  type: 'gallery-item';
+  itemType: GalleryItemType;
   image?: string;
   videoUrl?: string;
 }
+
+export interface NoteBlock {
+  type: 'note';
+  text: string;
+}
+
+export type Block =
+  | Job
+  | PlaceholderEntry
+  | Education
+  | CertificateGroupBlock
+  | GalleryItemBlock
+  | NoteBlock;
 
 export interface Hero {
   name: string;
@@ -45,49 +67,21 @@ export interface Hero {
   profile: string;
 }
 
-export interface TeachingTab {
+export interface Tab {
   label: string;
-  jobs: Job[];
-  placeholders: PlaceholderEntry[];
-}
-
-export interface InternationalEducationTab {
-  label: string;
-  jobs: Job[];
-}
-
-export interface TestingTab {
-  label: string;
-  certificates: Certificate[];
-  jobs: Job[];
-  emptyNote: string;
-}
-
-export interface AcademicBackgroundTab {
-  label: string;
-  education: Education[];
-}
-
-export interface EmptyNoteTab {
-  label: string;
-  emptyNote: string;
-}
-
-export interface MediaTab {
-  label: string;
-  items: GalleryItem[];
+  blocks: Block[];
 }
 
 export interface PortfolioData {
   hero: Hero;
   tabs: {
-    teaching: TeachingTab;
-    internationalEducation: InternationalEducationTab;
-    testing: TestingTab;
-    academicBackground: AcademicBackgroundTab;
-    publications: EmptyNoteTab;
-    talks: EmptyNoteTab;
-    media: MediaTab;
+    teaching: Tab;
+    internationalEducation: Tab;
+    testing: Tab;
+    academicBackground: Tab;
+    publications: Tab;
+    talks: Tab;
+    media: Tab;
   };
   footer: string;
 }
