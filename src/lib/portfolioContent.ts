@@ -9,11 +9,24 @@ function historyKey(): string {
   return `history/${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
 }
 
-export async function getPortfolioContent(): Promise<PortfolioData> {
+// Strict read: throws on a genuine store read failure instead of swallowing
+// it into seed data. This is the read half of saveTabBlocksAction's
+// read-modify-write in app/admin/actions.ts — silently falling back to seed
+// data here would mean a transient read failure during a save overwrites
+// hero/footer/the other six tabs with seed content, keeping only the tab
+// being edited — exactly the silent-content-corruption this guardrail-heavy
+// project exists to prevent. getPortfolioContent() below is the fail-soft
+// version, correct for the PUBLIC page's degrade-gracefully behavior — it is
+// NOT safe to use as the read half of a write.
+export async function readPortfolioContentStrict(): Promise<PortfolioData> {
   const store = getContentStore(STORE_NAME);
+  const current = (await store.get(CURRENT_KEY)) as PortfolioData | null;
+  return current ?? (seedData as PortfolioData);
+}
+
+export async function getPortfolioContent(): Promise<PortfolioData> {
   try {
-    const current = (await store.get(CURRENT_KEY)) as PortfolioData | null;
-    return current ?? (seedData as PortfolioData);
+    return await readPortfolioContentStrict();
   } catch (error) {
     // A store read failure (not just "nothing saved yet") should degrade to the
     // seed content rather than break the public page — see spec's Error handling section.

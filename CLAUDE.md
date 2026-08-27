@@ -151,16 +151,33 @@ open question to revisit casually.
 **Content-fidelity guardrail on Puck AI.** This matters for the same reason
 described under "Content fidelity" above — a generative tool silently
 rewording real content is a real, prior incident in this repo. Puck AI has
-two layers of guardrail: `app/api/puck/[...all]/route.ts`'s `ai.context` (a
-handler-level system prompt instructing the AI to only scaffold or
-rearrange, never rewrite existing real content) and per-field
-`ai.instructions` in `puck.config.tsx` (six specific fields/components
-carry instructions like "never rewrite an existing bullet's text"). This
-was live-tested against the real Puck Cloud API: asking it to add a block
-succeeded; asking it to "rewrite this job's bullet points to sound more
-impressive" got a genuine refusal, with the page's real content
-byte-identical before and after. It remains a prompt-level guardrail, not a
-hard technical block — the real backstop is the history snapshots described
+**four** layers of guardrail, not just prompt-level ones — verified directly
+against the installed `@puckeditor/cloud-client@0.8.2` SDK's type
+definitions, not just its docs:
+
+1. `ai.context` in `app/api/puck/[...all]/route.ts` — a handler-level system
+   prompt instructing the AI to only scaffold or rearrange, never rewrite
+   existing real content.
+2. Per-field `ai.instructions` in `puck.config.tsx` — six specific
+   fields/components carry instructions like "never rewrite an existing
+   bullet's text".
+3. `ai.mode: 'assembly'`, also set in `app/api/puck/[...all]/route.ts` — a
+   genuine config-level constraint (confirmed as a real typed SDK option,
+   not just a documented convention) that locks Puck AI to composing from
+   this app's own configured components; the alternative `'design'` mode
+   can invent new custom-styled sections outside that config.
+4. `designMode.allowed` defaulting to `false` at the SDK level (see
+   `node_modules/@puckeditor/cloud-client/dist/index.d.ts`), and the route
+   handler passes no `designMode` object at all — so design mode isn't just
+   discouraged by a prompt, it's refused by the SDK itself.
+
+Layers 1–2 are prompt-level (the model could in principle be argued around);
+layers 3–4 are config/SDK-level constraints the model can't talk its way
+past. This was live-tested against the real Puck Cloud API: asking it to
+add a block succeeded; asking it to "rewrite this job's bullet points to
+sound more impressive" got a genuine refusal, with the page's real content
+byte-identical before and after. Even so, treat this as defense in depth,
+not a hard guarantee — the real backstop is the history snapshots described
 above (any bad edit is recoverable) plus the fact that only the
 allow-listed site owner has access at all.
 

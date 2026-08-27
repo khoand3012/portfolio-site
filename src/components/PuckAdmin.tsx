@@ -90,6 +90,7 @@ export function PuckAdmin({ initialData }: Props) {
           ))}
         </div>
       </nav>
+      {status === 'saving' && <p className="wrap">Saving…</p>}
       {status === 'saved' && <p className="wrap">Saved.</p>}
       {status === 'error' && <p className="wrap">{errorMessage}</p>}
       {/* key={activeKey} forces a remount with fresh `data` when switching tabs —
@@ -102,6 +103,15 @@ export function PuckAdmin({ initialData }: Props) {
           off-screen. Rendered as a direct child of the page (not inside
           `.wrap`, which caps width at 1040px) so the canvas gets full width
           and drag-and-drop isn't offset by an ancestor's box constraints. */}
+      {/* Note on router.refresh() above: it re-renders this component with a
+          fresh `initialData` prop, so `data={blocksToPuckData(...)}` below
+          technically produces a new object identity on that re-render even
+          though <Puck> stays mounted (same key={activeKey}). This is
+          harmless, not an unhandled bug — Puck only reads `data` once, at
+          mount, as the initial document; it does not re-sync on every
+          re-render of a changed `data` prop. The refetched blocks are also
+          byte-equivalent to what was just published, so even if Puck did
+          re-read it, there'd be nothing to reconcile. */}
       <Puck
         key={activeKey}
         config={puckConfig}

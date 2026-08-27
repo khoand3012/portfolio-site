@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
+import { puckConfig } from '../../puck.config';
 import type { Block } from '../types';
-import { blocksToPuckData, puckDataToBlocks } from './puckAdapter';
+import {
+  blocksToPuckData,
+  KNOWN_COMPONENT_NAMES,
+  puckDataToBlocks,
+} from './puckAdapter';
 
 describe('puckAdapter', () => {
   it('round-trips every block type without losing or altering data', () => {
@@ -39,5 +44,19 @@ describe('puckAdapter', () => {
 
     const roundTripped = puckDataToBlocks(blocksToPuckData(blocks));
     expect(roundTripped).toEqual(blocks);
+  });
+
+  // Closes the type-drift risk the round-trip test above can't catch: that
+  // test only round-trips the adapter's own two functions against each
+  // other, so it would still pass unchanged even if puck.config.tsx renamed
+  // a component (e.g. GalleryItem -> Gallery) — silently breaking that
+  // block type's publish path in production. This test imports the REAL
+  // puckConfig from puck.config.tsx and asserts, at the data level, that
+  // the set of component names puckAdapter.ts knows how to handle
+  // (KNOWN_COMPONENT_NAMES) is exactly the set of components actually
+  // configured for the live editor.
+  it('knows how to handle exactly the component names configured in the real puck.config.tsx', () => {
+    const configuredComponentNames = Object.keys(puckConfig.components).sort();
+    expect([...KNOWN_COMPONENT_NAMES].sort()).toEqual(configuredComponentNames);
   });
 });

@@ -11,7 +11,11 @@ vi.mock('./blobStore', () => ({
   }),
 }));
 
-import { getPortfolioContent, savePortfolioContent } from './portfolioContent';
+import {
+  getPortfolioContent,
+  readPortfolioContentStrict,
+  savePortfolioContent,
+} from './portfolioContent';
 
 describe('portfolioContent', () => {
   beforeEach(() => {
@@ -47,6 +51,35 @@ describe('portfolioContent', () => {
       throw new Error('simulated store outage');
     };
 
+    const data = await getPortfolioContent();
+    expect(data.hero.name).toBe('Truong Nam Nguyen');
+
+    memoryStore.get = originalGet;
+  });
+
+  it('readPortfolioContentStrict propagates a store read failure instead of falling back to seed data', async () => {
+    const originalGet = memoryStore.get.bind(memoryStore);
+    memoryStore.get = () => {
+      throw new Error('simulated store outage');
+    };
+
+    await expect(readPortfolioContentStrict()).rejects.toThrow(
+      'simulated store outage',
+    );
+
+    memoryStore.get = originalGet;
+  });
+
+  it('getPortfolioContent still falls back to seed data on the same read failure that readPortfolioContentStrict throws on', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const originalGet = memoryStore.get.bind(memoryStore);
+    memoryStore.get = () => {
+      throw new Error('simulated store outage');
+    };
+
+    await expect(readPortfolioContentStrict()).rejects.toThrow(
+      'simulated store outage',
+    );
     const data = await getPortfolioContent();
     expect(data.hero.name).toBe('Truong Nam Nguyen');
 

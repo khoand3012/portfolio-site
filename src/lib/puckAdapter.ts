@@ -6,11 +6,12 @@
 //
 // blocksToPuckData's return type is parametrized as Data<PuckComponentProps>
 // rather than the bare (generic-default) `Data` — this is deliberate, not
-// cosmetic. `PuckComponentProps` is a hand-kept mirror of puck.config.tsx's
-// `Props` type (Task 15), used only to make TypeScript actually check the
-// shape this function produces. With the bare `Data` type, `content[]`'s
-// element type resolves through `DefaultComponents = Record<string, any>`,
-// which makes each component's `props` type collapse to `any` (TS collapses
+// cosmetic. `PuckComponentProps` (imported from src/lib/puckTypes.ts, the
+// single source of truth shared with puck.config.tsx's `Config<...>`
+// parameter) is used only to make TypeScript actually check the shape this
+// function produces. With the bare `Data` type, `content[]`'s element type
+// resolves through `DefaultComponents = Record<string, any>`, which makes
+// each component's `props` type collapse to `any` (TS collapses
 // `any & { id: string }` to plain `any`) — so a `props` object *missing*
 // `id` type-checks fine against bare `Data`, even though `id` is genuinely
 // required by Puck at runtime (see WithId<Props> in
@@ -28,31 +29,7 @@
 // this direction comes from the round-trip test, not from the type checker.
 import type { ComponentData, ComponentDataMap, Data } from '@puckeditor/core';
 import type { Block } from '../types';
-
-type BulletItem = { text: string };
-
-// Mirrors puck.config.tsx's `Props` type. Kept as a separate, hand-written
-// copy on purpose — see the file-level comment above and the Task 16 report
-// for why this module doesn't import puck.config.tsx itself. tsc cannot
-// detect drift between this copy and the real one; keep them in sync by
-// hand if puck.config.tsx's fields change.
-type PuckComponentProps = {
-  Job: { company: string; dates: string; role: string; bullets: BulletItem[] };
-  Placeholder: { company: string; note: string };
-  Education: {
-    school: string;
-    dates: string;
-    degree: string;
-    bullets: BulletItem[];
-    dissertation: string;
-  };
-  CertificateGroup: {
-    heading: string;
-    certificates: { text: string; accent: boolean }[];
-  };
-  GalleryItem: { itemType: 'photo' | 'video'; image: string; videoUrl: string };
-  Note: { text: string };
-};
+import type { BulletItem, PuckComponentProps } from './puckTypes';
 
 // The six Puck component names, matched by name against Block['type'].
 // Job -> 'Job'/'job' and Note -> 'Note'/'note' are plain lowercasing, but
@@ -62,6 +39,28 @@ type PuckComponentProps = {
 // spells out its own pair explicitly for this reason — nothing here is
 // derived by an automatic case transform.
 type PuckComponentData = ComponentDataMap<PuckComponentProps>;
+
+// Runtime mirror of `keyof PuckComponentProps`, exported so
+// puckAdapter.test.ts can assert this module recognizes exactly the
+// component names actually configured in puck.config.tsx (no more, no
+// less), without needing to export any of the switch-statement internals
+// above. Typed as Record<keyof PuckComponentProps, true> rather than a bare
+// string array so that TypeScript's excess/missing-property checking on
+// this object literal itself forces this list to stay in sync with
+// PuckComponentProps — adding, removing, or renaming a key in the shared
+// type and forgetting to update this list is a compile error, not a
+// silent runtime drift.
+const KNOWN_COMPONENT_TYPES: Record<keyof PuckComponentProps, true> = {
+  Job: true,
+  Placeholder: true,
+  Education: true,
+  CertificateGroup: true,
+  GalleryItem: true,
+  Note: true,
+};
+export const KNOWN_COMPONENT_NAMES = Object.keys(
+  KNOWN_COMPONENT_TYPES,
+) as (keyof PuckComponentProps)[];
 
 const toPuckBullets = (bullets: string[] = []): BulletItem[] =>
   bullets.map((text) => ({ text }));

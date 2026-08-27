@@ -24,8 +24,8 @@ import { GalleryTile } from './src/components/GalleryTile';
 import { JobCard } from './src/components/JobCard';
 import { Note } from './src/components/Note';
 import { PlaceholderCard } from './src/components/PlaceholderCard';
+import type { BulletItem, PuckComponentProps } from './src/lib/puckTypes';
 
-type BulletItem = { text: string };
 const bulletsField = {
   type: 'array' as const,
   arrayFields: { text: { type: 'textarea' as const } },
@@ -37,25 +37,7 @@ const bulletsField = {
   },
 };
 
-type Props = {
-  Job: { company: string; dates: string; role: string; bullets: BulletItem[] };
-  Placeholder: { company: string; note: string };
-  Education: {
-    school: string;
-    dates: string;
-    degree: string;
-    bullets: BulletItem[];
-    dissertation: string;
-  };
-  CertificateGroup: {
-    heading: string;
-    certificates: { text: string; accent: boolean }[];
-  };
-  GalleryItem: { itemType: 'photo' | 'video'; image: string; videoUrl: string };
-  Note: { text: string };
-};
-
-export const puckConfig: Config<Props> = {
+export const puckConfig: Config<PuckComponentProps> = {
   components: {
     Job: {
       ai: {

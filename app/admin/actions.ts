@@ -3,7 +3,7 @@
 import { auth } from '../../auth';
 import { isAllowedEmail } from '../../src/lib/allowedEmails';
 import {
-  getPortfolioContent,
+  readPortfolioContentStrict,
   savePortfolioContent,
 } from '../../src/lib/portfolioContent';
 import type { Block, PortfolioData } from '../../src/types';
@@ -132,7 +132,15 @@ export async function saveTabBlocksAction(
     );
   }
   assertBlocksShape(blocks, tabKey);
-  const current = await getPortfolioContent();
+  // Strict, non-fail-soft read: a transient store read failure must throw
+  // here rather than silently fall back to seed data, since this is the
+  // read half of a read-modify-write — see the comment on
+  // readPortfolioContentStrict in src/lib/portfolioContent.ts. A thrown
+  // error here propagates up through this server action and is caught by
+  // PuckAdmin.tsx's handlePublish, which reports "Save failed: ..." — that
+  // is strictly better than silently saving a corrupted document over
+  // hero/footer/the other six tabs.
+  const current = await readPortfolioContentStrict();
   const updated: PortfolioData = {
     ...current,
     tabs: { ...current.tabs, [tabKey]: { ...current.tabs[tabKey], blocks } },
