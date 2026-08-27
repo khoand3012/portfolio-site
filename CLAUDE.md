@@ -113,8 +113,8 @@ feature request to act on explicitly, not a default.
 **Access** is gated by Google OAuth (Auth.js v5 / `next-auth@beta`,
 configured in `auth.ts` at the repo root) plus an email allow-list
 (`src/lib/allowedEmails.ts`, checked against the `ALLOWED_EMAILS` env var).
-This is enforced at four independent layers — each catches a different way
-the others could be bypassed, so don't "simplify" this down to one check:
+This is enforced at five independent layers — each catches a different way
+the others could be bypassed, so don't "simplify" this down to fewer checks:
 
 1. Auth.js's `signIn` callback in `auth.ts` — rejects a non-allow-listed
    Google account's sign-in outright.
@@ -125,6 +125,12 @@ the others could be bypassed, so don't "simplify" this down to one check:
 4. `app/admin/actions.ts`'s `saveTabBlocksAction` — re-checks auth again
    before writing, because server actions can be invoked directly and can't
    rely on the page having already gated access.
+5. `app/api/puck/[...all]/route.ts`'s request handler — re-checks auth
+   again before calling `puckHandler`, for a rationale distinct from the
+   others: this route spends the Puck Cloud account's metered AI credit on
+   every call, so even a request that never touches saved content still
+   needs to be blocked before it reaches Puck's API, not just before it
+   can write anything.
 
 **The editor:** `puck.config.tsx` (repo root) maps this app's existing
 components (`JobCard`, `EducationCard`, etc.) to Puck-editable fields;
