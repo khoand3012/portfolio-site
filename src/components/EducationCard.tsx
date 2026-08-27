@@ -14,6 +14,7 @@ export function EducationCard({ ed }: Props) {
       <p className="role">{ed.degree}</p>
       <ul>
         {(ed.bullets || []).map((bullet, i) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: Static content list rendered from admin-edited data, not client-side-reorderable UI state, so index keys are safe here.
           <li key={i}>{bullet}</li>
         ))}
         {ed.dissertation && (

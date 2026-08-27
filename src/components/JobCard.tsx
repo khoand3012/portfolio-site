@@ -15,6 +15,7 @@ export function JobCard({ job }: Props) {
       {job.bullets && job.bullets.length > 0 && (
         <ul>
           {job.bullets.map((bullet, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: Static content list rendered from admin-edited data, not client-side-reorderable UI state, so index keys are safe here.
             <li key={i}>{bullet}</li>
           ))}
         </ul>

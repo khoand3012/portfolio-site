@@ -47,11 +47,13 @@ export function TabbedContent({ tabs }: Props) {
                 <div className={tab.wrapperClassName}>
                   {/* Blocks don't reorder client-side outside the admin panel, so index keys are safe here. */}
                   {tab.blocks.map((block, i) => (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: Blocks don't reorder client-side outside the admin panel, so index keys are safe here.
                     <BlockRenderer key={i} block={block} />
                   ))}
                 </div>
               ) : (
                 tab.blocks.map((block, i) => (
+                  // biome-ignore lint/suspicious/noArrayIndexKey: Blocks don't reorder client-side outside the admin panel, so index keys are safe here.
                   <BlockRenderer key={i} block={block} />
                 ))
               )}

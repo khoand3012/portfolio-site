@@ -1,6 +1,6 @@
-import { getContentStore } from './blobStore';
 import seedData from '../../content/portfolio.json';
 import type { PortfolioData } from '../types';
+import { getContentStore } from './blobStore';
 
 const STORE_NAME = 'portfolio';
 const CURRENT_KEY = 'current.json';
@@ -17,7 +17,10 @@ export async function getPortfolioContent(): Promise<PortfolioData> {
   } catch (error) {
     // A store read failure (not just "nothing saved yet") should degrade to the
     // seed content rather than break the public page — see spec's Error handling section.
-    console.error('Failed to read portfolio content from the content store, falling back to seed data:', error);
+    console.error(
+      'Failed to read portfolio content from the content store, falling back to seed data:',
+      error,
+    );
     return seedData as PortfolioData;
   }
 }

@@ -32,8 +32,11 @@ describe('portfolioContent', () => {
     const current = await getPortfolioContent();
     expect(current.footer).toBe('Updated footer');
 
-    const historyKeys = [...memoryStore.keys()].filter((k) => k.startsWith('history/'));
+    const historyKeys = [...memoryStore.keys()].filter((k) =>
+      k.startsWith('history/'),
+    );
     expect(historyKeys).toHaveLength(1);
+    // biome-ignore lint/style/noNonNullAssertion: The toHaveLength(1) assertion above guarantees index 0 exists.
     expect(memoryStore.get(historyKeys[0]!)).toEqual(updated);
   });
 

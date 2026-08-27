@@ -30,6 +30,7 @@ export function GalleryTile({ item }: Props) {
           style={{ textDecoration: 'none' }}
         >
           {item.image ? (
+            // biome-ignore lint/performance/noImgElement: item.image is an arbitrary admin-supplied URL; next/image would need remotePatterns/domain allowlisting configured first, which is out of scope for this lint pass.
             <img
               src={item.image}
               alt=""
@@ -49,6 +50,7 @@ export function GalleryTile({ item }: Props) {
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
+                // biome-ignore lint/security/noDangerouslySetInnerHtml: Hardcoded constant SVG path markup, never user input — safe to inject directly.
                 dangerouslySetInnerHTML={{ __html: VIDEO_ICON_PATHS }}
               />
               <span>Watch video</span>
@@ -66,6 +68,7 @@ export function GalleryTile({ item }: Props) {
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
+          // biome-ignore lint/security/noDangerouslySetInnerHtml: Hardcoded constant SVG path markup, never user input — safe to inject directly.
           dangerouslySetInnerHTML={{ __html: VIDEO_ICON_PATHS }}
         />
         + Add video
@@ -76,6 +79,7 @@ export function GalleryTile({ item }: Props) {
   if (item.image) {
     return (
       <div className="gallery-tile" style={{ padding: 0, overflow: 'hidden' }}>
+        {/* biome-ignore lint/performance/noImgElement: item.image is an arbitrary admin-supplied URL; next/image would need remotePatterns/domain allowlisting configured first, which is out of scope for this lint pass. */}
         <img
           src={item.image}
           alt=""
@@ -94,6 +98,7 @@ export function GalleryTile({ item }: Props) {
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
+        // biome-ignore lint/security/noDangerouslySetInnerHtml: Hardcoded constant SVG path markup, never user input — safe to inject directly.
         dangerouslySetInnerHTML={{ __html: PHOTO_ICON_PATHS }}
       />
       + Add photo

@@ -63,8 +63,10 @@ type PuckComponentProps = {
 // derived by an automatic case transform.
 type PuckComponentData = ComponentDataMap<PuckComponentProps>;
 
-const toPuckBullets = (bullets: string[] = []): BulletItem[] => bullets.map((text) => ({ text }));
-const fromPuckBullets = (items: { text: string }[] = []): string[] => items.map((i) => i.text);
+const toPuckBullets = (bullets: string[] = []): BulletItem[] =>
+  bullets.map((text) => ({ text }));
+const fromPuckBullets = (items: { text: string }[] = []): string[] =>
+  items.map((i) => i.text);
 
 function blockToComponentData(block: Block, id: string): PuckComponentData {
   switch (block.type) {
@@ -107,7 +109,10 @@ function blockToComponentData(block: Block, id: string): PuckComponentData {
           // pattern as Job.role/Education.dissertation above: an absent
           // `accent` becomes explicit `false` the first time a block passes
           // through Puck. See the Task 16 report.
-          certificates: block.certificates.map((c) => ({ text: c.text, accent: c.accent ?? false })),
+          certificates: block.certificates.map((c) => ({
+            text: c.text,
+            accent: c.accent ?? false,
+          })),
         },
       };
     case 'gallery-item':
@@ -131,13 +136,16 @@ function blockToComponentData(block: Block, id: string): PuckComponentData {
 
 export function blocksToPuckData(blocks: Block[]): Data<PuckComponentProps> {
   return {
-    content: blocks.map((block, i) => blockToComponentData(block, `${block.type}-${i}`)),
+    content: blocks.map((block, i) =>
+      blockToComponentData(block, `${block.type}-${i}`),
+    ),
     root: {},
   };
 }
 
 export function puckDataToBlocks(data: Data): Block[] {
   return (data.content as ComponentData[]).map((item): Block => {
+    // biome-ignore lint/suspicious/noExplicitAny: Puck's own ComponentData/ComponentDataMap types don't narrow props here; the switch below does the real narrowing to Block shapes per block type.
     const props = item.props as Record<string, any>;
     switch (item.type) {
       case 'Job':
@@ -149,7 +157,11 @@ export function puckDataToBlocks(data: Data): Block[] {
           bullets: fromPuckBullets(props.bullets),
         };
       case 'Placeholder':
-        return { type: 'placeholder', company: props.company, note: props.note };
+        return {
+          type: 'placeholder',
+          company: props.company,
+          note: props.note,
+        };
       case 'Education':
         return {
           type: 'education',
@@ -160,7 +172,11 @@ export function puckDataToBlocks(data: Data): Block[] {
           dissertation: props.dissertation || undefined,
         };
       case 'CertificateGroup':
-        return { type: 'certificate-group', heading: props.heading, certificates: props.certificates };
+        return {
+          type: 'certificate-group',
+          heading: props.heading,
+          certificates: props.certificates,
+        };
       case 'GalleryItem':
         return {
           type: 'gallery-item',

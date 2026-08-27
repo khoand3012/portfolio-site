@@ -35,6 +35,7 @@ export function MetaItem({ icon, text, href }: Props) {
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
+        // biome-ignore lint/security/noDangerouslySetInnerHtml: Hardcoded constant SVG path markup, never user input — safe to inject directly.
         dangerouslySetInnerHTML={{ __html: ICON_PATHS[icon] }}
       />
       {text}
