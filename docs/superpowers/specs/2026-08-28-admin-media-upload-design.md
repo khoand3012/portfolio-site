@@ -22,7 +22,6 @@ one for content.
 
 ## Scope
 
-In scope:
 - A new Cloudflare R2 bucket (S3-compatible object storage) for uploaded
   media, entirely separate from the Netlify Blobs content store.
 - A new `app/api/upload/route.ts` Route Handler — deliberately a Route
@@ -51,21 +50,6 @@ In scope:
 - Upload progress surfaced as a toast, updated in place via the `update()`
   handle the existing `toast()` call already returns
   (`src/lib/use-toast.ts`) — no new UI component needed for this.
-
-Out of scope:
-- Direct-to-R2 presigned uploads (explicitly decided against — everything
-  proxies through the app's own server).
-- WebSocket-based progress tracking — Netlify Functions do not support
-  WebSockets at all (a hard architectural constraint of the serverless
-  execution model, not a config limitation); progress is relayed over a
-  streamed HTTP response on the same upload request instead.
-- Video transcoding, thumbnailing, or adaptive-bitrate delivery. Uploaded
-  files are stored and served as-is.
-- Cleaning up orphaned R2 objects when a gallery item's media is replaced or
-  the item is deleted. Accepted gap for now, in the same spirit as this
-  codebase's existing unbounded content-history-snapshot growth — revisit
-  only if storage cost becomes a real problem.
-- Redesigning any block type other than `gallery-item`.
 
 ## Architecture
 
@@ -203,6 +187,7 @@ as a caption line under the tile when present.
 - `r2.dev` vs. a custom domain for the public bucket URL — the site owner's
   call at bucket-provisioning time (walked through separately in
   conversation, not repeated here).
-- Orphaned-object cleanup (see "Out of scope") — revisit only if it becomes
-  a real cost problem, consistent with how this repo already treats the
-  unbounded content-history-snapshot growth.
+- Orphaned R2 objects aren't cleaned up when a gallery item's media is
+  replaced or the item is deleted — revisit only if it becomes a real cost
+  problem, consistent with how this repo already treats the unbounded
+  content-history-snapshot growth.
