@@ -419,3 +419,134 @@ footer::before {
     font-size: 18px;
   }
 }
+
+/* Toast (admin panel) */
+.toast-viewport {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  width: 100%;
+  max-width: 420px;
+  max-height: 100vh;
+  margin: 0;
+  padding: var(--spacing-md);
+  list-style: none;
+  outline: none;
+}
+
+.toast {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  width: 100%;
+  padding: var(--spacing-md);
+  padding-right: var(--spacing-xl);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-default);
+  background: var(--color-bg-page);
+  box-shadow: var(--shadow-lg);
+  pointer-events: auto;
+}
+.toast[data-state="open"] {
+  animation: toast-slide-in 200ms ease-out;
+}
+.toast[data-state="closed"] {
+  animation: toast-fade-out 150ms ease-in forwards;
+}
+.toast[data-swipe="move"] {
+  transform: translateX(var(--radix-toast-swipe-move-x));
+  transition: none;
+}
+.toast[data-swipe="cancel"] {
+  transform: translateX(0);
+  transition: transform 200ms ease-out;
+}
+.toast[data-swipe="end"] {
+  animation: toast-swipe-out 150ms ease-out forwards;
+}
+
+.toast-destructive {
+  background: var(--color-bg-inverse);
+  border-color: var(--color-accent-default);
+  color: var(--color-text-inverse);
+}
+
+.toast-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+.toast-description {
+  margin: var(--spacing-xs) 0 0;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+.toast-destructive .toast-description {
+  color: var(--mint-100);
+}
+
+.toast-close {
+  position: absolute;
+  top: var(--spacing-sm);
+  right: var(--spacing-sm);
+  display: flex;
+  padding: var(--spacing-xs);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: inherit;
+  opacity: 0.6;
+  cursor: pointer;
+}
+.toast-close:hover {
+  opacity: 1;
+  background: var(--color-bg-surface);
+}
+.toast-destructive .toast-close:hover {
+  background: var(--navy-700);
+}
+
+.toast-action {
+  flex-shrink: 0;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font: inherit;
+  font-size: 13px;
+  color: inherit;
+  cursor: pointer;
+}
+
+@keyframes toast-slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+@keyframes toast-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@keyframes toast-swipe-out {
+  from {
+    transform: translateX(var(--radix-toast-swipe-end-x));
+  }
+  to {
+    transform: translateX(100%);
+  }
+}

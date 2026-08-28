@@ -20,9 +20,10 @@ export default async function AdminPage() {
   // Defense in depth: middleware already gates '/admin' at the routing layer,
   // but this page must not trust that alone — re-check the session and the
   // allow-list here too, and refuse to render any content (including the
-  // "Signed in as" line) if the check fails. See this project's Global
-  // Constraint: admin/editing routes must be gated by a valid, allow-listed
-  // session checked server-side, not just hidden in the UI.
+  // "Signed in as" toast PuckAdmin fires on mount) if the check fails. See
+  // this project's Global Constraint: admin/editing routes must be gated by
+  // a valid, allow-listed session checked server-side, not just hidden in
+  // the UI.
   if (!isAllowedEmail(session?.user?.email, process.env.ALLOWED_EMAILS)) {
     redirect('/api/auth/signin');
   }
@@ -31,8 +32,7 @@ export default async function AdminPage() {
 
   return (
     <div>
-      <p className="wrap">Signed in as {session?.user?.email}</p>
-      <PuckAdmin initialData={data} />
+      <PuckAdmin initialData={data} userEmail={session?.user?.email} />
     </div>
   );
 }
