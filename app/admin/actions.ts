@@ -2,8 +2,9 @@
 
 import { auth } from '../../auth';
 import { isAllowedEmail } from '../../src/lib/allowedEmails';
+import { SaveConflictError } from '../../src/lib/blobStore';
 import {
-  readPortfolioContentStrict,
+  readPortfolioContentWithEtag,
   savePortfolioContent,
 } from '../../src/lib/portfolioContent';
 import type { Block, PortfolioData } from '../../src/types';
@@ -22,6 +23,40 @@ function isKnownTabKey(key: unknown): key is keyof PortfolioData['tabs'] {
   return (
     typeof key === 'string' && (REQUIRED_TAB_KEYS as string[]).includes(key)
   );
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((v) => typeof v === 'string');
+}
+
+// Optional fields still need a shape check when present — the components
+// that render them (JobCard.tsx, EducationCard.tsx, CertificateGroup.tsx,
+// GalleryTile.tsx) call `.map`/property access on these unconditionally
+// once they're truthy, so a wrong-shaped-but-truthy value (e.g. a string
+// where an array is expected) throws at render time on the public page
+// instead of failing here at save time.
+function assertOptionalStringArray(
+  value: unknown,
+  label: string,
+  field: string,
+): void {
+  if (value !== undefined && !isStringArray(value)) {
+    throw new Error(
+      `Invalid content shape: ${label} has a non-string-array ${field}`,
+    );
+  }
+}
+
+function assertOptionalString(
+  value: unknown,
+  label: string,
+  field: string,
+): void {
+  if (value !== undefined && typeof value !== 'string') {
+    throw new Error(
+      `Invalid content shape: ${label} has a non-string ${field}`,
+    );
+  }
 }
 
 // PuckAdmin's onPublish hands this whatever puckDataToBlocks (Task 16) derives
@@ -57,6 +92,8 @@ function assertBlocksShape(
             `Invalid content shape: ${label} (job) missing company/dates`,
           );
         }
+        assertOptionalString(record.role, label, 'role');
+        assertOptionalStringArray(record.bullets, label, 'bullets');
         break;
       case 'placeholder':
         if (
@@ -78,6 +115,8 @@ function assertBlocksShape(
             `Invalid content shape: ${label} (education) missing school/dates/degree`,
           );
         }
+        assertOptionalStringArray(record.bullets, label, 'bullets');
+        assertOptionalString(record.dissertation, label, 'dissertation');
         break;
       case 'certificate-group':
         if (
@@ -88,6 +127,26 @@ function assertBlocksShape(
             `Invalid content shape: ${label} (certificate-group) missing heading/certificates`,
           );
         }
+        record.certificates.forEach((cert, ci) => {
+          const certLabel = `${label}.certificates[${ci}]`;
+          if (typeof cert !== 'object' || cert === null) {
+            throw new Error(
+              `Invalid content shape: ${certLabel} is not an object`,
+            );
+          }
+          const certRecord = cert as Record<string, unknown>;
+          if (typeof certRecord.text !== 'string') {
+            throw new Error(`Invalid content shape: ${certLabel} missing text`);
+          }
+          if (
+            certRecord.accent !== undefined &&
+            typeof certRecord.accent !== 'boolean'
+          ) {
+            throw new Error(
+              `Invalid content shape: ${certLabel} has a non-boolean accent`,
+            );
+          }
+        });
         break;
       case 'gallery-item':
         if (record.itemType !== 'photo' && record.itemType !== 'video') {
@@ -95,6 +154,8 @@ function assertBlocksShape(
             `Invalid content shape: ${label} (gallery-item) has invalid itemType`,
           );
         }
+        assertOptionalString(record.image, label, 'image');
+        assertOptionalString(record.videoUrl, label, 'videoUrl');
         break;
       case 'note':
         if (typeof record.text !== 'string') {
@@ -135,15 +196,28 @@ export async function saveTabBlocksAction(
   // Strict, non-fail-soft read: a transient store read failure must throw
   // here rather than silently fall back to seed data, since this is the
   // read half of a read-modify-write — see the comment on
-  // readPortfolioContentStrict in src/lib/portfolioContent.ts. A thrown
+  // readPortfolioContentWithEtag in src/lib/portfolioContent.ts. A thrown
   // error here propagates up through this server action and is caught by
   // PuckAdmin.tsx's handlePublish, which reports "Save failed: ..." — that
   // is strictly better than silently saving a corrupted document over
   // hero/footer/the other six tabs.
-  const current = await readPortfolioContentStrict();
+  const { data: current, etag } = await readPortfolioContentWithEtag();
   const updated: PortfolioData = {
     ...current,
     tabs: { ...current.tabs, [tabKey]: { ...current.tabs[tabKey], blocks } },
   };
-  await savePortfolioContent(updated);
+  try {
+    await savePortfolioContent(updated, { ifMatch: etag });
+  } catch (error) {
+    // Someone else's save landed between this action's read and write —
+    // surface that plainly rather than let the second writer silently
+    // discard the first writer's change. See blobStore.ts's ContentStore
+    // for what this check does and doesn't guarantee.
+    if (error instanceof SaveConflictError) {
+      throw new Error(
+        'Someone else saved changes to this tab while you were editing. Reload the page and reapply your edit.',
+      );
+    }
+    throw error;
+  }
 }

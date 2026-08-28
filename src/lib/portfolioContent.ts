@@ -24,6 +24,23 @@ export async function readPortfolioContentStrict(): Promise<PortfolioData> {
   return current ?? (seedData as PortfolioData);
 }
 
+// Same strict read as above, plus the etag it was read at — the write half
+// of a read-modify-write needs both: the content to modify, and a value to
+// hand back to savePortfolioContent's `ifMatch` so a concurrent save in
+// between is detected instead of silently overwritten. See blobStore.ts's
+// ContentStore.setJSON for what that check does and doesn't guarantee.
+export async function readPortfolioContentWithEtag(): Promise<{
+  data: PortfolioData;
+  etag: string | null;
+}> {
+  const store = getContentStore(STORE_NAME);
+  const [current, etag] = await Promise.all([
+    store.get(CURRENT_KEY) as Promise<PortfolioData | null>,
+    store.getEtag(CURRENT_KEY),
+  ]);
+  return { data: current ?? (seedData as PortfolioData), etag };
+}
+
 export async function getPortfolioContent(): Promise<PortfolioData> {
   try {
     return await readPortfolioContentStrict();
@@ -38,9 +55,15 @@ export async function getPortfolioContent(): Promise<PortfolioData> {
   }
 }
 
-export async function savePortfolioContent(data: PortfolioData): Promise<void> {
+export async function savePortfolioContent(
+  data: PortfolioData,
+  options?: { ifMatch?: string | null },
+): Promise<void> {
   const store = getContentStore(STORE_NAME);
-  await store.setJSON(CURRENT_KEY, data);
+  // Throws SaveConflictError instead of writing if `options.ifMatch` no
+  // longer matches the stored etag — see readPortfolioContentWithEtag and
+  // blobStore.ts's ContentStore.setJSON.
+  await store.setJSON(CURRENT_KEY, data, options);
   // Timestamped snapshot on every save — this is the "git diff before commit"
   // safety net a git-tracked file gave for free, now that content lives in a
   // Blob/local store instead of a git-tracked file.

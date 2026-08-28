@@ -1,22 +1,64 @@
+import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { getStore } from '@netlify/blobs';
 
 export interface ContentStore {
   get(key: string): Promise<unknown | null>;
-  setJSON(key: string, value: unknown): Promise<void>;
+  // Cheap, body-less read of just the current etag — null if the key has
+  // never been written. Used for the optimistic-concurrency check below,
+  // not for reading content itself.
+  getEtag(key: string): Promise<string | null>;
+  // `ifMatch` (etag read earlier, or null for "must not exist yet") makes
+  // this a check-then-set: it throws SaveConflictError instead of writing
+  // if the stored etag no longer matches. Neither backend has a true atomic
+  // compare-and-swap (Netlify Blobs' `setJSON` takes no conditional option
+  // as of @netlify/blobs 8.2.0 — see main.d.ts's `SetOptions`), so there is
+  // still a narrow race between the check and the write; this narrows the
+  // conflict window from "the length of an admin edit session" down to one
+  // network round trip, which is the best available without a native CAS.
+  setJSON(
+    key: string,
+    value: unknown,
+    options?: { ifMatch?: string | null },
+  ): Promise<void>;
+}
+
+export class SaveConflictError extends Error {
+  constructor(key: string) {
+    super(`"${key}" was changed by another save since it was last read.`);
+    this.name = 'SaveConflictError';
+  }
 }
 
 function localFileStore(storeName: string): ContentStore {
   const baseDir = path.join(process.cwd(), '.local-blobs', storeName);
+
+  function readEtag(filePath: string): string | null {
+    if (!existsSync(filePath)) return null;
+    // Content hash rather than mtime: local-dev filesystems' mtime
+    // resolution isn't fine-grained enough to reliably distinguish two
+    // saves that land within the same tick.
+    return createHash('sha256').update(readFileSync(filePath)).digest('hex');
+  }
+
   return {
     async get(key) {
       const filePath = path.join(baseDir, key);
       if (!existsSync(filePath)) return null;
       return JSON.parse(readFileSync(filePath, 'utf8'));
     },
-    async setJSON(key, value) {
+    async getEtag(key) {
+      return readEtag(path.join(baseDir, key));
+    },
+    async setJSON(key, value, options) {
       const filePath = path.join(baseDir, key);
+      if (
+        options?.ifMatch !== undefined &&
+        readEtag(filePath) !== options.ifMatch
+      ) {
+        throw new SaveConflictError(key);
+      }
       mkdirSync(path.dirname(filePath), { recursive: true });
       writeFileSync(filePath, JSON.stringify(value, null, 2));
     },
@@ -25,6 +67,14 @@ function localFileStore(storeName: string): ContentStore {
 
 function netlifyBlobStore(storeName: string): ContentStore {
   const store = getStore(storeName);
+
+  async function readEtag(key: string): Promise<string | null> {
+    // `getMetadata` (not `getWithMetadata`) is the cheap etag-only read — it
+    // doesn't fetch the blob body, per main.d.ts's `Store.getMetadata`.
+    const result = await store.getMetadata(key);
+    return result?.etag ?? null;
+  }
+
   return {
     // `Store.get` returns raw text by default — `{ type: 'json' }` is required
     // to get a parsed value back instead of a JSON string (verified against
@@ -32,7 +82,14 @@ function netlifyBlobStore(storeName: string): ContentStore {
     async get(key) {
       return store.get(key, { type: 'json' });
     },
-    async setJSON(key, value) {
+    getEtag: readEtag,
+    async setJSON(key, value, options) {
+      if (
+        options?.ifMatch !== undefined &&
+        (await readEtag(key)) !== options.ifMatch
+      ) {
+        throw new SaveConflictError(key);
+      }
       await store.setJSON(key, value);
     },
   };
