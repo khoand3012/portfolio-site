@@ -205,9 +205,17 @@ now.)
 
 ## Design tokens are fixed
 
-The color palette (navy blue / graphite grey / mint green / white, defined
-as CSS custom properties in `src/styles/global.css`) was an explicit, deliberate
-choice by the site owner. Don't change the hex values as a side effect of
-an unrelated change — if a task calls for new UI, reuse the existing
-`--navy-*`, `--graphite-*`, `--mint-*` tokens rather than introducing new
-colors.
+The color palette (a warm cream/gold/amber/rust/brown "sand" scale, defined
+as `--sand-100` through `--sand-900` CSS custom properties in
+`src/styles/global.css`, replacing an earlier navy/graphite/mint palette) was
+an explicit, deliberate choice by the site owner. Don't change the hex
+values as a side effect of an unrelated change — if a task calls for new UI,
+reuse the existing `--sand-*` primitives or the semantic `--color-*` tokens
+built on them rather than introducing new colors.
+
+Note `--color-text-secondary` intentionally equals `--color-text-primary`
+(both full-strength `--sand-900`) rather than a lighter/muted variant — any
+lower-opacity blend toward the cream `--sand-100` page background drops
+below WCAG AA's 4.5:1 contrast minimum for body text (verified: 90% brown
+measures 4.58:1, 75% measures 3.38:1, already failing). Convey text
+hierarchy with font-size/weight, not a lighter shade of this palette.

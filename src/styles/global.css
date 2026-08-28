@@ -1,38 +1,34 @@
 :root {
-  /* Primitives — unchanged palette (navy blue / graphite grey / mint green / white) */
-  --navy-900: #0b1e33;
-  --navy-700: #14324f;
-  --navy-500: #1e4b73;
-  --navy-300: #6e93b3;
-  --navy-100: #d6e4ef;
-  --mint-900: #04231b;
-  --mint-700: #0b4a3a;
-  --mint-500: #0f7a5c;
-  --mint-300: #5fbfa0;
-  --mint-100: #d8f0e8;
-  --graphite-900: #1b1e22;
-  --graphite-700: #3a3f45;
-  --graphite-500: #6b7280;
-  --graphite-300: #a8aeb8;
-  --graphite-100: #e3e5e8;
-  --graphite-50: #f4f5f6;
-  --white: #ffffff;
+  /* Primitives — warm sand palette (cream / gold / amber / rust / brown) */
+  --sand-100: #f5e0b3;
+  --sand-300: #f2c94c;
+  --sand-500: #e8a54a;
+  --sand-700: #d77d2b;
+  --sand-900: #7a4b2b;
 
   /* Semantic */
-  --color-bg-page: var(--white);
-  --color-bg-surface: var(--graphite-50);
-  --color-bg-inverse: var(--navy-900);
-  --color-bg-accent-subtle: var(--mint-100);
-  --color-text-primary: var(--graphite-900);
-  --color-text-secondary: var(--graphite-500);
-  --color-text-inverse: var(--white);
-  --color-text-on-accent: var(--white);
-  --color-border-default: var(--graphite-100);
-  --color-border-strong: var(--graphite-300);
-  --color-primary-default: var(--navy-500);
-  --color-primary-hover: var(--navy-700);
-  --color-accent-default: var(--mint-500);
-  --color-accent-hover: var(--mint-700);
+  --color-bg-page: var(--sand-100);
+  --color-bg-content: var(--sand-300);
+  --color-bg-surface: var(--sand-500);
+  --color-bg-inverse: var(--sand-900);
+  --color-bg-accent-subtle: var(--sand-300);
+  --color-text-primary: var(--sand-900);
+  /* Full-strength brown, same as text-primary: at any lower opacity this
+     drops below WCAG AA's 4.5:1 body-text minimum against the cream page
+     background (verified — 90% brown blended toward cream measures
+     4.58:1, 75% measures 3.38:1, already failing). Hierarchy for
+     lower-emphasis text comes from font-size/weight elsewhere, not a
+     lighter color, because the palette doesn't have a second shade that's
+     both distinct from full brown and still legible on cream. */
+  --color-text-secondary: var(--sand-900);
+  --color-text-inverse: var(--sand-100);
+  --color-text-on-accent: var(--sand-100);
+  --color-border-default: var(--sand-500);
+  --color-border-strong: var(--sand-700);
+  --color-primary-default: var(--sand-900);
+  --color-primary-hover: var(--sand-700);
+  --color-accent-default: var(--sand-700);
+  --color-accent-hover: var(--sand-900);
 
   /* Typography */
   --font-headline: "Source Serif 4", Georgia, "Times New Roman", serif;
@@ -85,7 +81,7 @@ a {
 /* Hero */
 .hero {
   position: relative;
-  background: linear-gradient(155deg, var(--navy-900) 0%, var(--navy-700) 100%);
+  background: linear-gradient(155deg, var(--sand-900) 0%, var(--sand-700) 100%);
   color: var(--color-text-inverse);
   padding: var(--spacing-3xl) 0 var(--spacing-2xl);
   overflow: hidden;
@@ -96,7 +92,7 @@ a {
   inset: 0;
   background: radial-gradient(
     560px 320px at 88% -10%,
-    rgba(95, 191, 160, 0.16),
+    rgba(242, 201, 76, 0.16),
     transparent 70%
   );
   pointer-events: none;
@@ -123,7 +119,7 @@ a {
 .hero .role {
   font-size: 17px;
   font-weight: 500;
-  color: var(--mint-100);
+  color: var(--sand-100);
   margin: 0 0 var(--spacing-md);
 }
 .avatar {
@@ -132,14 +128,14 @@ a {
   height: 76px;
   border-radius: var(--radius-full);
   background: rgba(255, 255, 255, 0.06);
-  border: 1.5px solid var(--mint-300);
+  border: 1.5px solid var(--sand-300);
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: var(--font-headline);
   font-size: 22px;
   font-weight: 700;
-  color: var(--mint-100);
+  color: var(--sand-100);
   letter-spacing: 0.5px;
 }
 .meta-row {
@@ -153,23 +149,23 @@ a {
   align-items: center;
   gap: 7px;
   font-size: 13.5px;
-  color: var(--navy-100);
+  color: var(--sand-100);
   text-decoration: none;
 }
 a.meta-item:hover {
-  color: var(--white);
+  color: var(--sand-300);
   text-decoration: underline;
 }
 .meta-item svg {
   width: 14px;
   height: 14px;
-  color: var(--mint-300);
+  color: var(--sand-300);
   flex-shrink: 0;
 }
 .hero .profile {
   font-size: 15.5px;
   line-height: 1.65;
-  color: var(--navy-100);
+  color: var(--sand-100);
   max-width: 660px;
   margin: 0;
 }
@@ -205,7 +201,6 @@ a.meta-item:hover {
   cursor: pointer;
   white-space: nowrap;
   border-bottom: 2.5px solid transparent;
-  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
   transition:
     color 0.15s ease,
     border-color 0.15s ease,
@@ -246,7 +241,7 @@ main {
 }
 
 .block-card {
-  background: var(--color-bg-page);
+  background: var(--color-bg-content);
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-md);
   padding: var(--spacing-lg);
@@ -449,7 +444,7 @@ footer::before {
   padding-right: var(--spacing-xl);
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border-default);
-  background: var(--color-bg-page);
+  background: var(--color-bg-content);
   box-shadow: var(--shadow-lg);
   pointer-events: auto;
 }
@@ -488,7 +483,7 @@ footer::before {
   color: var(--color-text-secondary);
 }
 .toast-destructive .toast-description {
-  color: var(--mint-100);
+  color: var(--sand-100);
 }
 
 .toast-close {
@@ -509,7 +504,7 @@ footer::before {
   background: var(--color-bg-surface);
 }
 .toast-destructive .toast-close:hover {
-  background: var(--navy-700);
+  background: var(--sand-700);
 }
 
 .toast-action {
