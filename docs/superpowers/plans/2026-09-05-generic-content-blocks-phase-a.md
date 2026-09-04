@@ -1770,7 +1770,6 @@ In `src/styles/global.css`:
   font-size: 10px;
   font-weight: 700;
   margin-right: var(--spacing-xs);
-  opacity: 0.85;
 }
 
 .media-figure { margin: 0; }
