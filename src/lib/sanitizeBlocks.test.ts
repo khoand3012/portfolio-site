@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import type { NewBlock } from '../types';
+import type { Block } from '../types';
 import { sanitizeBlocks } from './sanitizeBlocks';
 
-const container = (children: NewBlock[]): NewBlock => ({
+const container = (children: Block[]): Block => ({
   type: 'container',
   children,
   direction: 'stack',
@@ -16,7 +16,7 @@ const container = (children: NewBlock[]): NewBlock => ({
   surface: 'none',
 });
 
-const text = (html: string): NewBlock => ({
+const text = (html: string): Block => ({
   type: 'text',
   html,
   variant: 'body',
@@ -76,13 +76,13 @@ describe('sanitizeBlocks', () => {
     const result = sanitizeBlocks([
       container([container([text('<p>deep<script>x</script></p>')])]),
     ]);
-    const outer = result[0] as { children: NewBlock[] };
-    const inner = outer.children[0] as { children: NewBlock[] };
+    const outer = result[0] as { children: Block[] };
+    const inner = outer.children[0] as { children: Block[] };
     expect((inner.children[0] as { html: string }).html).toBe('<p>deep</p>');
   });
 
   it('leaves plain-text fields untouched', () => {
-    const blocks: NewBlock[] = [
+    const blocks: Block[] = [
       { type: 'heading', text: 'A <b>literal</b> title', level: 'h3' },
       { type: 'dates', text: '2020 – 2021' },
       { type: 'badge', text: 'IELTS 8.0', accent: true, year: '2025' },

@@ -12,12 +12,12 @@ describe('TabbedContent', () => {
           {
             slug: 'a',
             label: 'A',
-            blocks: [{ type: 'note', text: 'Panel A' }],
+            blocks: [{ type: 'heading', text: 'Panel A', level: 'h3' }],
           },
           {
             slug: 'b',
             label: 'B',
-            blocks: [{ type: 'note', text: 'Panel B' }],
+            blocks: [{ type: 'heading', text: 'Panel B', level: 'h3' }],
           },
         ]}
       />,

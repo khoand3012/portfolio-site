@@ -10,62 +10,6 @@ import type {
 
 // Shape of content/portfolio.json. Keep in sync with that file — see CLAUDE.md.
 
-export interface Job {
-  type: 'job';
-  company: string;
-  dates: string;
-  role?: string;
-  bullets?: string[];
-}
-
-export interface PlaceholderEntry {
-  type: 'placeholder';
-  company: string;
-  note: string;
-}
-
-export interface Education {
-  type: 'education';
-  school: string;
-  dates: string;
-  degree: string;
-  bullets?: string[];
-  dissertation?: string;
-}
-
-export interface Certificate {
-  text: string;
-  accent?: boolean;
-}
-
-export interface CertificateGroupBlock {
-  type: 'certificate-group';
-  heading: string;
-  certificates: Certificate[];
-}
-
-export type GalleryItemType = 'photo' | 'video';
-
-export interface GalleryItemBlock {
-  type: 'gallery-item';
-  itemType: GalleryItemType;
-  image?: string;
-  videoUrl?: string;
-}
-
-export interface NoteBlock {
-  type: 'note';
-  text: string;
-}
-
-export type Block =
-  | Job
-  | PlaceholderEntry
-  | Education
-  | CertificateGroupBlock
-  | GalleryItemBlock
-  | NoteBlock;
-
 export interface Hero {
   name: string;
   initials: string;
@@ -77,30 +21,10 @@ export interface Hero {
   profile: string;
 }
 
-export interface Tab {
-  label: string;
-  blocks: Block[];
-}
-
-export interface PortfolioData {
-  hero: Hero;
-  tabs: {
-    teaching: Tab;
-    internationalEducation: Tab;
-    testing: Tab;
-    academicBackground: Tab;
-    publications: Tab;
-    talks: Tab;
-    media: Tab;
-  };
-  footer: string;
-}
-
 // ---------------------------------------------------------------------------
-// Generic block model (v2). Added alongside the v1 types above; the swap
-// happens in one atomic change (see the phase A plan). The layout unions are
-// re-exported from src/lib/layoutOptions.ts rather than redeclared, so the
-// values the editor offers and the types the code checks cannot drift apart.
+// Generic block model. The layout unions are re-exported from
+// src/lib/layoutOptions.ts rather than redeclared, so the values the editor
+// offers and the types the code checks cannot drift apart.
 // ---------------------------------------------------------------------------
 
 export type {
@@ -115,7 +39,7 @@ export type {
 
 export interface ContainerBlock {
   type: 'container';
-  children: NewBlock[];
+  children: Block[];
   direction: LayoutDirection;
   gap: LayoutSpacing;
   padding: LayoutSpacing;
@@ -178,11 +102,7 @@ export interface VideoBlock {
   caption?: string;
 }
 
-/**
- * Temporary name. Becomes `Block` in the atomic swap (plan Task 6), at which
- * point this alias and every v1 interface above are deleted.
- */
-export type NewBlock =
+export type Block =
   | ContainerBlock
   | HeadingBlock
   | TextBlock
@@ -192,8 +112,7 @@ export type NewBlock =
   | ImageBlock
   | VideoBlock;
 
-/** Becomes `Tab` in the atomic swap (plan Task 6). */
-export interface TabV2 {
+export interface Tab {
   /**
    * Stable identifier. Generated with crypto.randomUUID() when the owner
    * creates a tab; taken verbatim from the v1 object key when a document is
@@ -202,5 +121,12 @@ export interface TabV2 {
    */
   id: string;
   label: string;
-  blocks: NewBlock[];
+  blocks: Block[];
+}
+
+export interface PortfolioData {
+  version: 2;
+  hero: Hero;
+  tabs: Tab[];
+  footer: string;
 }

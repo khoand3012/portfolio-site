@@ -20,19 +20,13 @@
 //    reading "R&D" silently becomes broken markup on the public page.
 import type {
   BadgeBlock,
+  Block,
   ContainerBlock,
   Hero,
-  NewBlock,
-  TabV2,
+  PortfolioData,
+  Tab,
   TextBlock,
 } from '../types';
-
-export interface PortfolioDataV2 {
-  version: 2;
-  hero: Hero;
-  tabs: TabV2[];
-  footer: string;
-}
 
 const V1_TAB_KEYS = [
   'teaching',
@@ -70,7 +64,7 @@ function container(over: Partial<ContainerBlock> = {}): ContainerBlock {
 }
 
 /** The .block-card look: padding and outer margin now come from the container. */
-function card(children: NewBlock[]): ContainerBlock {
+function card(children: Block[]): ContainerBlock {
   return container({
     surface: 'card',
     padding: 'lg',
@@ -80,7 +74,7 @@ function card(children: NewBlock[]): ContainerBlock {
 }
 
 /** The .placeholder.card look. */
-function dashed(children: NewBlock[]): ContainerBlock {
+function dashed(children: Block[]): ContainerBlock {
   return container({
     surface: 'dashed',
     padding: 'xl',
@@ -112,7 +106,7 @@ function text(value: string, variant: TextBlock['variant']): TextBlock {
  * in a block node, so migrated items carry the same <p> the editor will
  * produce — kept consistent deliberately, and zeroed out in CSS.
  */
-function bullets(items: string[]): NewBlock {
+function bullets(items: string[]): Block {
   return {
     type: 'bullets',
     items: items.map((item) => `<p>${escapeHtml(item)}</p>`),
@@ -122,7 +116,7 @@ function bullets(items: string[]): NewBlock {
 // biome-ignore lint/suspicious/noExplicitAny: v1 documents are untyped input read from the content store; each branch below narrows by the `type` discriminator before touching fields.
 type V1Block = Record<string, any>;
 
-function migrateBlock(block: V1Block): NewBlock {
+function migrateBlock(block: V1Block): Block {
   switch (block.type) {
     case 'job':
       return card([
@@ -180,7 +174,7 @@ function migrateBlock(block: V1Block): NewBlock {
   }
 }
 
-function isV2(raw: unknown): raw is PortfolioDataV2 {
+function isV2(raw: unknown): raw is PortfolioData {
   return (
     typeof raw === 'object' &&
     raw !== null &&
@@ -194,7 +188,7 @@ function isV1(raw: unknown): boolean {
   return typeof tabs === 'object' && tabs !== null && !Array.isArray(tabs);
 }
 
-export function migratePortfolioData(raw: unknown): PortfolioDataV2 {
+export function migratePortfolioData(raw: unknown): PortfolioData {
   if (isV2(raw)) return raw;
   if (!isV1(raw)) {
     throw new Error(
@@ -208,7 +202,7 @@ export function migratePortfolioData(raw: unknown): PortfolioDataV2 {
     footer: string;
   };
 
-  const tabs: TabV2[] = [];
+  const tabs: Tab[] = [];
   for (const key of V1_TAB_KEYS) {
     const tab = doc.tabs[key];
     if (!tab) continue;

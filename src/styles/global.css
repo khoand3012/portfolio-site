@@ -240,31 +240,6 @@ main {
   }
 }
 
-.block-card {
-  background: var(--color-bg-content);
-  border: 1px solid var(--color-border-default);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease,
-    border-color 0.2s ease;
-}
-.block-card:hover {
-  transform: translateY(-2px);
-  border-color: var(--color-border-strong);
-  box-shadow:
-    var(--shadow-md),
-    inset 3px 0 0 var(--color-accent-default);
-}
-.block-card .block-title-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: var(--spacing-sm);
-  margin-bottom: var(--spacing-xs);
-}
 .block-heading {
   font-family: var(--font-headline);
   font-size: 18px;
@@ -272,18 +247,10 @@ main {
   color: var(--color-text-primary);
   margin: 0;
 }
-.block-card .dates {
+.dates {
   font-size: 13px;
   color: var(--color-text-secondary);
   white-space: nowrap;
-}
-.block-card .role {
-  font-size: 12.5px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  color: var(--color-primary-default);
-  margin-bottom: var(--spacing-sm);
 }
 .bullet-list {
   margin: 0;
@@ -320,15 +287,6 @@ main {
   background: var(--color-accent-default);
   color: var(--color-text-on-accent);
   border-color: var(--color-accent-default);
-}
-
-/* Placeholder blocks (no content provided yet) */
-.placeholder {
-  background: var(--color-bg-surface);
-  border: 1px dashed var(--color-border-strong);
-  border-radius: var(--radius-md);
-  color: var(--color-text-secondary);
-  font-size: 14px;
 }
 
 /* Gallery */

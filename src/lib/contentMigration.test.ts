@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { NewBlock } from '../types';
+import type { Block } from '../types';
 import v1Fixture from './__fixtures__/portfolio-v1.json';
 import { migratePortfolioData } from './contentMigration';
 
@@ -23,7 +23,7 @@ function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-function flatten(blocks: NewBlock[], out: NewBlock[] = []): NewBlock[] {
+function flatten(blocks: Block[], out: Block[] = []): Block[] {
   for (const block of blocks) {
     out.push(block);
     if (block.type === 'container') flatten(block.children, out);

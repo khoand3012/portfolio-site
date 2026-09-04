@@ -8,7 +8,6 @@ interface Tab {
   slug: string;
   label: string;
   blocks: Block[];
-  wrapperClassName?: string;
 }
 
 interface Props {
@@ -43,20 +42,10 @@ export function TabbedContent({ tabs }: Props) {
               id={`tab-${tab.slug}`}
               className={`tab-panel${tab.slug === activeSlug ? ' active' : ''}`}
             >
-              {tab.wrapperClassName ? (
-                <div className={tab.wrapperClassName}>
-                  {/* Blocks don't reorder client-side outside the admin panel, so index keys are safe here. */}
-                  {tab.blocks.map((block, i) => (
-                    // biome-ignore lint/suspicious/noArrayIndexKey: Blocks don't reorder client-side outside the admin panel, so index keys are safe here.
-                    <BlockRenderer key={i} block={block} />
-                  ))}
-                </div>
-              ) : (
-                tab.blocks.map((block, i) => (
-                  // biome-ignore lint/suspicious/noArrayIndexKey: Blocks don't reorder client-side outside the admin panel, so index keys are safe here.
-                  <BlockRenderer key={i} block={block} />
-                ))
-              )}
+              {tab.blocks.map((block, i) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: Blocks don't reorder client-side outside the admin panel, so index keys are safe here.
+                <BlockRenderer key={i} block={block} />
+              ))}
             </section>
           ))}
         </div>

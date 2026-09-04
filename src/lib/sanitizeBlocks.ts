@@ -16,7 +16,7 @@
 // Server-only: sanitize-html parses with htmlparser2 and must never be
 // imported by a 'use client' component.
 import sanitizeHtml from 'sanitize-html';
-import type { NewBlock } from '../types';
+import type { Block } from '../types';
 
 const OPTIONS: sanitizeHtml.IOptions = {
   allowedTags: ['p', 'br', 'strong', 'em', 'u', 'a'],
@@ -30,8 +30,8 @@ const OPTIONS: sanitizeHtml.IOptions = {
 
 const clean = (html: string): string => sanitizeHtml(html, OPTIONS);
 
-export function sanitizeBlocks(blocks: NewBlock[]): NewBlock[] {
-  return blocks.map((block): NewBlock => {
+export function sanitizeBlocks(blocks: Block[]): Block[] {
+  return blocks.map((block): Block => {
     switch (block.type) {
       case 'container':
         return { ...block, children: sanitizeBlocks(block.children) };
