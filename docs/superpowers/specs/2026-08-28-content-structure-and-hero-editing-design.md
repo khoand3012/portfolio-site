@@ -729,7 +729,7 @@ copy, per CLAUDE.md's standing rule.
 
 `docs/superpowers/specs/2026-08-28-admin-media-upload-design.md` has been
 revised alongside this one and now depends on it: it should land after this
-spec's phases 1–3. Its R2 bucket, `app/api/upload/route.ts` route handler,
+spec's phase A. Its R2 bucket, `app/api/upload/route.ts` route handler,
 auth gate, streamed progress protocol, and custom upload-or-paste Puck field
 all stand unchanged — they now bind to this spec's `image.src`, `video.url`,
 and `video.poster` fields instead of the removed
@@ -767,13 +767,21 @@ nothing about captions is left for it to add.
 
 ## Implementation phases
 
-Ordered so each phase leaves the repo green (`npm run check`, `npm run test`,
-`npm run build`):
+**Steps 1–3 are one atomic change and cannot land separately.** Replacing
+`Block` in `src/types.ts` immediately breaks `BlockRenderer.tsx`'s exhaustive
+switch, `puckAdapter.ts`'s twelve variant references, `puck.config.tsx`'s
+component map, and `assertBlocksShape` — sixteen files import from
+`src/types.ts` and four hard-reference the old variant names. There is no
+ordering of these three steps that leaves `npm run check` passing in between,
+so they are steps within one phase, not phases. Only the boundaries *after*
+step 3 are real.
 
-1. **Content model + migration.** New `types.ts`, `layoutOptions.ts`,
+Phase A — the content model (steps 1–3 together, one green checkpoint at the
+end):
+
+1. **Model + migration.** New `types.ts`, `layoutOptions.ts`,
    `contentMigration.ts`, seed file rewritten, and CLAUDE.md's
-   `types.ts`-sync section rewritten for the generic model. No UI change
-   yet — the old components stay temporarily so the build keeps passing.
+   `types.ts`-sync section rewritten for the generic model.
 2. **Public rendering.** New block components, `BlockRenderer` recursion,
    `app/page.tsx` tab derivation, the CSS layout classes, the rich-text
    inline styles, the dropped centered-italic placeholder rules, and the
@@ -784,18 +792,27 @@ Ordered so each phase leaves the repo green (`npm run check`, `npm run test`,
    `assertBlocksShape` recursion and caps, `sanitizeBlocks.ts` and its wiring
    into `saveTabBlocksAction`, and CLAUDE.md's Puck AI guardrail section
    updated for the new field/component set.
-4. **Dynamic tabs.** `saveTabsAction`, `TabManager.tsx`, `PuckAdmin.tsx`'s
-   dynamic tab bar and `tabId`-based saves.
-5. **Hero.** `dob`/`credential`, `HeroForm.tsx`, `saveHeroAction`,
-   `MetaItem`'s calendar icon, `.credential` CSS.
 
-Phase 5 is orthogonal to 1–4 and can land at any point, including first.
+Within phase A the tests are the safe ordering device rather than the build:
+`contentMigration.test.ts` and `sanitizeBlocks.test.ts` are both pure-function
+tests with no dependency on the components or the editor, so they can be
+written and passing before any component is touched, and they cover the two
+places where a mistake is silent rather than loud.
+
+Phase B — **dynamic tabs.** `saveTabsAction`, `TabManager.tsx`,
+`PuckAdmin.tsx`'s dynamic tab bar and `tabId`-based saves. Depends on phase
+A only for `Tab.id` existing in the model; everything else here is additive.
+
+Phase C — **Hero.** `dob`/`credential`, `HeroForm.tsx`, `saveHeroAction`,
+`MetaItem`'s calendar icon, `.credential` CSS. Fully orthogonal to A and B —
+it touches `Hero`, never `Block` or `Tab` — so it can land at any point,
+including first, and is the natural choice for a small independent slice.
 
 ## Testing / verification plan
 
 - **`src/lib/contentMigration.test.ts` — "migrating the real seed loses no
   content"**: run `migratePortfolioData` over the actual
-  `content/portfolio.json` (as it was before the phase-1 rewrite, kept as a
+  `content/portfolio.json` (as it was before phase A rewrote it, kept as a
   test fixture) and assert that every string value reachable in the v1
   document appears somewhere in the v2 tree. This is the single most
   important test in the change: it is what makes "no character of content is

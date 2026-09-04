@@ -24,7 +24,7 @@ one for content.
 
 This spec **depends on**
 `docs/superpowers/specs/2026-08-28-content-structure-and-hero-editing-design.md`
-and should land after its phases 1–3. That spec replaces the old
+and should land after its phase A. That spec replaces the old
 `gallery-item` block with two separate blocks:
 
 ```ts
