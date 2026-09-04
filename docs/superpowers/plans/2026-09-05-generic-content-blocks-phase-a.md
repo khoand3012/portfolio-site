@@ -2016,6 +2016,20 @@ Nothing emits these class names once the v1 components are gone — the new
 `src/styles/global.css`, delete the `.block-card`, `.block-card:hover`,
 `.block-card .block-title-row` and `.placeholder` rules.
 
+Two of the rules nested under `.block-card` need handling rather than plain
+deletion:
+
+- **Promote `.block-card .dates` to a bare `.dates`**, keeping its
+  declarations exactly (`font-size: 13px`, `color: var(--color-text-secondary)`,
+  `white-space: nowrap`). The `Dates` component emits `<span class="dates">`
+  but the new `Container` emits `layout-surface-card`, not `.block-card` — so
+  without this promotion every date on the site renders unstyled. This is the
+  same de-nesting already done for `.block-heading` and `.bullet-list` in
+  Task 5; `.dates` was missed there.
+- **Delete `.block-card .role`.** Its declarations were copied into
+  `.text-subtitle` in Task 5, which is what the `Text` component uses now.
+  Leaving it would be dead CSS.
+
 **Keep** `.tag`, `.tag.accent`, `.gallery-tile` and `.gallery-tile:hover` —
 `Badge` and `MediaPlaceholder` still use them. Task 5 deliberately left all
 of these in place because the v1 components were still live then; this step
