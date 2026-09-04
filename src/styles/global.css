@@ -244,8 +244,6 @@ main {
   background: var(--color-bg-content);
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-md);
-  padding: var(--spacing-lg);
-  margin-bottom: var(--spacing-lg);
   box-shadow: var(--shadow-sm);
   transition:
     transform 0.2s ease,
@@ -267,10 +265,11 @@ main {
   gap: var(--spacing-sm);
   margin-bottom: var(--spacing-xs);
 }
-.block-card h3 {
+.block-heading {
   font-family: var(--font-headline);
   font-size: 18px;
   font-weight: 700;
+  color: var(--color-text-primary);
   margin: 0;
 }
 .block-card .dates {
@@ -286,32 +285,26 @@ main {
   color: var(--color-primary-default);
   margin-bottom: var(--spacing-sm);
 }
-.block-card ul {
+.bullet-list {
   margin: 0;
   padding-left: 18px;
   font-size: 14px;
   color: var(--color-text-secondary);
 }
-.block-card li {
+.bullet-list li {
   margin-bottom: var(--spacing-xs);
 }
-.block-card li:last-child {
+.bullet-list li:last-child {
   margin-bottom: 0;
 }
-.block-card li b {
+.bullet-list li b {
   color: var(--color-text-primary);
   font-weight: 600;
 }
-.block-card li::marker {
+.bullet-list li::marker {
   color: var(--color-accent-default);
 }
 
-.tag-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-sm);
-  margin-top: var(--spacing-md);
-}
 .tag {
   display: inline-flex;
   align-items: center;
@@ -334,23 +327,8 @@ main {
   background: var(--color-bg-surface);
   border: 1px dashed var(--color-border-strong);
   border-radius: var(--radius-md);
-  padding: var(--spacing-xl);
-  margin-bottom: var(--spacing-lg);
   color: var(--color-text-secondary);
   font-size: 14px;
-  font-style: italic;
-  text-align: center;
-}
-.placeholder.card {
-  text-align: left;
-  font-style: normal;
-}
-.placeholder.card h3 {
-  font-style: normal;
-  font-family: var(--font-headline);
-  font-size: 18px;
-  color: var(--color-text-primary);
-  margin: 0 0 var(--spacing-xs);
 }
 
 /* Gallery */
@@ -544,4 +522,226 @@ footer::before {
   to {
     transform: translateX(100%);
   }
+}
+
+/* Generic layout containers. One class per stored layout value — see
+   src/lib/layoutOptions.ts, which is the single source of truth these
+   class names must stay in step with. */
+.layout {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.layout-dir-stack {
+  flex-direction: column;
+}
+.layout-dir-row {
+  flex-direction: row;
+}
+.layout-dir-grid {
+  display: grid;
+}
+.layout-wrap {
+  flex-wrap: wrap;
+}
+
+.layout-gap-none {
+  gap: 0;
+}
+.layout-gap-xs {
+  gap: var(--spacing-xs);
+}
+.layout-gap-sm {
+  gap: var(--spacing-sm);
+}
+.layout-gap-md {
+  gap: var(--spacing-md);
+}
+.layout-gap-lg {
+  gap: var(--spacing-lg);
+}
+.layout-gap-xl {
+  gap: var(--spacing-xl);
+}
+
+.layout-p-none {
+  padding: 0;
+}
+.layout-p-xs {
+  padding: var(--spacing-xs);
+}
+.layout-p-sm {
+  padding: var(--spacing-sm);
+}
+.layout-p-md {
+  padding: var(--spacing-md);
+}
+.layout-p-lg {
+  padding: var(--spacing-lg);
+}
+.layout-p-xl {
+  padding: var(--spacing-xl);
+}
+
+.layout-mb-none {
+  margin-bottom: 0;
+}
+.layout-mb-xs {
+  margin-bottom: var(--spacing-xs);
+}
+.layout-mb-sm {
+  margin-bottom: var(--spacing-sm);
+}
+.layout-mb-md {
+  margin-bottom: var(--spacing-md);
+}
+.layout-mb-lg {
+  margin-bottom: var(--spacing-lg);
+}
+.layout-mb-xl {
+  margin-bottom: var(--spacing-xl);
+}
+
+.layout-align-start {
+  align-items: flex-start;
+}
+.layout-align-center {
+  align-items: center;
+}
+.layout-align-end {
+  align-items: flex-end;
+}
+.layout-align-stretch {
+  align-items: stretch;
+}
+.layout-align-baseline {
+  align-items: baseline;
+}
+
+.layout-justify-start {
+  justify-content: flex-start;
+}
+.layout-justify-center {
+  justify-content: center;
+}
+.layout-justify-end {
+  justify-content: flex-end;
+}
+.layout-justify-between {
+  justify-content: space-between;
+}
+
+.layout-dir-grid.layout-cols-1 {
+  grid-template-columns: 1fr;
+}
+.layout-dir-grid.layout-cols-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+.layout-dir-grid.layout-cols-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+.layout-dir-grid.layout-cols-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+.layout-dir-grid.layout-cols-auto {
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
+
+.layout-surface-card {
+  background: var(--color-bg-content);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+.layout-surface-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-border-strong);
+  box-shadow:
+    var(--shadow-md),
+    inset 3px 0 0 var(--color-accent-default);
+}
+.layout-surface-dashed {
+  background: var(--color-bg-surface);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+}
+
+/* Text variants. Hierarchy comes from size and weight only — never a
+   lighter shade, which would fail WCAG AA against the cream background. */
+.text-body {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+.text-small {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+.text-subtitle {
+  font-size: 12.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--color-primary-default);
+}
+.text-body p,
+.text-small p,
+.text-subtitle p {
+  margin: 0 0 var(--spacing-sm);
+}
+.text-body p:last-child,
+.text-small p:last-child,
+.text-subtitle p:last-child {
+  margin-bottom: 0;
+}
+
+/* Inline marks produced by the rich-text editor. */
+.text-body a,
+.text-small a,
+.bullet-list a {
+  color: var(--color-accent-default);
+  text-decoration: underline;
+}
+.text-body strong,
+.text-small strong,
+.bullet-list strong {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+/* Tiptap always wraps a list item's content in a block node, so each
+   bullet's stored HTML is <p>…</p>. Zero its margin rather than doing
+   string surgery on the HTML in the render path. */
+.bullet-list li > p {
+  margin: 0;
+}
+
+.tag-year {
+  font-size: 10px;
+  font-weight: 700;
+  margin-right: var(--spacing-xs);
+  opacity: 0.85;
+}
+
+.media-figure {
+  margin: 0;
+}
+.media-image,
+.media-video {
+  width: 100%;
+  border-radius: var(--radius-md);
+  display: block;
+}
+.media-image {
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+.media-caption {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin-top: var(--spacing-xs);
 }
