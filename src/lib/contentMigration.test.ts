@@ -31,24 +31,68 @@ function flatten(blocks: NewBlock[], out: NewBlock[] = []): NewBlock[] {
   return out;
 }
 
+const V1_TAB_KEYS = [
+  'teaching',
+  'internationalEducation',
+  'testing',
+  'academicBackground',
+  'publications',
+  'talks',
+  'media',
+] as const;
+
 describe('migratePortfolioData', () => {
   it('loses no content when migrating the real v1 document', () => {
     const v2 = migratePortfolioData(v1Fixture);
-    const haystack = JSON.stringify(v2);
-    for (const original of collectStrings(v1Fixture)) {
-      // A string's form in v2 depends on where it landed: rich-text fields
-      // (text.html, bullets.items) are HTML-escaped on the way in, while
-      // plain-text fields (heading.text, dates.text, badge.text, tab labels,
-      // hero) keep it verbatim. Accept either — the claim under test is that
-      // the content survives, not which field it survived into. Without the
-      // escaped form this fails on the first "&" in a bullet; without the raw
-      // form it fails on the first "&" in a company name.
+
+    // A string's form in v2 depends on where it landed: rich-text fields
+    // (text.html, bullets.items) are HTML-escaped on the way in, while
+    // plain-text fields (heading.text, dates.text, badge.text, tab labels,
+    // hero) keep it verbatim. Accept either — the claim under test is that
+    // the content survives, not which field it survived into. Without the
+    // escaped form this fails on the first "&" in a bullet; without the raw
+    // form it fails on the first "&" in a company name.
+    const assertSurvives = (
+      original: string,
+      haystack: string,
+      where: string,
+    ) => {
       const raw = JSON.stringify(original).slice(1, -1);
       const escaped = JSON.stringify(escapeHtml(original)).slice(1, -1);
       expect(
         haystack.includes(raw) || haystack.includes(escaped),
-        `content lost during migration: ${original.slice(0, 80)}`,
+        `content lost during migration (${where}): ${original.slice(0, 80)}`,
       ).toBe(true);
+    };
+
+    // Checking each string against JSON.stringify(v2) (the whole document)
+    // is too weak: the fixture has a job with role "Exams Operation Officer"
+    // in the internationalEducation tab, and an unrelated job in the testing
+    // tab whose company is "Exams Operation Officer — British Council
+    // Vietnam". Company names land in v2 verbatim, so that substring is
+    // present in the full document regardless of whether the role from the
+    // *other* tab actually migrated — a dropped role would pass. Scoping
+    // each tab's strings to that tab's own migrated subtree closes the hole.
+    const v1Tabs = (v1Fixture as { tabs: Record<string, unknown> }).tabs;
+    for (const key of V1_TAB_KEYS) {
+      const v1Tab = v1Tabs[key];
+      if (!v1Tab) continue;
+      const v2Tab = v2.tabs.find((t) => t.id === key);
+      const tabHaystack = JSON.stringify(v2Tab ?? null);
+      for (const original of collectStrings(v1Tab)) {
+        assertSurvives(original, tabHaystack, key);
+      }
+    }
+
+    // hero and footer belong to no tab, so they're still checked against the
+    // whole document.
+    const wholeDocHaystack = JSON.stringify(v2);
+    const v1Doc = v1Fixture as { hero: unknown; footer: unknown };
+    for (const original of [
+      ...collectStrings(v1Doc.hero),
+      ...collectStrings(v1Doc.footer),
+    ]) {
+      assertSurvives(original, wholeDocHaystack, 'hero/footer');
     }
   });
 
