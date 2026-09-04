@@ -467,10 +467,19 @@ describe('migratePortfolioData', () => {
     const v2 = migratePortfolioData(v1Fixture);
     const haystack = JSON.stringify(v2);
     for (const original of collectStrings(v1Fixture)) {
-      // Strings that land in a rich-text field are HTML-escaped on the way
-      // in, so search for the escaped form — otherwise this test fails
-      // confusingly on the first "&" the site owner ever types.
-      expect(haystack).toContain(JSON.stringify(escapeHtml(original)).slice(1, -1));
+      // A string's form in v2 depends on where it landed: rich-text fields
+      // (text.html, bullets.items) are HTML-escaped on the way in, while
+      // plain-text fields (heading.text, dates.text, badge.text, tab labels,
+      // hero) keep it verbatim. Accept either — the claim under test is that
+      // the content survives, not which field it survived into. Without the
+      // escaped form this fails on the first "&" in a bullet; without the raw
+      // form it fails on the first "&" in a company name.
+      const raw = JSON.stringify(original).slice(1, -1);
+      const escaped = JSON.stringify(escapeHtml(original)).slice(1, -1);
+      expect(
+        haystack.includes(raw) || haystack.includes(escaped),
+        `content lost during migration: ${original.slice(0, 80)}`,
+      ).toBe(true);
     }
   });
 
@@ -575,8 +584,10 @@ describe('migratePortfolioData', () => {
     });
 
     const teaching = flatten(v2.tabs[0]?.blocks ?? []);
-    // A job with no role and no bullets yields no subtitle and no bullet list.
-    expect(teaching.filter((b) => b.type === 'text')).toHaveLength(2); // placeholder note + note block
+    // job 0 + placeholder note 1 + education degree/dissertation 2 + note 1 = 4.
+    // The job here has no role and no bullets, so it yields neither a subtitle
+    // nor a bullet list — empty optionals produce no child at all.
+    expect(teaching.filter((b) => b.type === 'text')).toHaveLength(4);
     expect(teaching.filter((b) => b.type === 'bullets')).toHaveLength(0);
     expect(teaching.find((b) => b.type === 'dates')).toEqual({
       type: 'dates',
@@ -1807,13 +1818,14 @@ git commit -m "Add the generic block components and their layout CSS"
 - Modify: `src/lib/sanitizeBlocks.ts` (rename `NewBlock` → `Block`)
 - Modify: `src/lib/portfolioContent.ts` (run the migration on every read)
 - Rewrite: `src/components/BlockRenderer.tsx`
+- Create: `src/lib/tabSlugs.ts`, `src/lib/tabSlugs.test.ts`
 - Modify: `app/page.tsx`, `src/components/TabbedContent.tsx`
 - Delete: `src/components/JobCard.tsx`, `EducationCard.tsx`, `PlaceholderCard.tsx`, `CertificateGroup.tsx`, `GalleryTile.tsx`, `Note.tsx`, and `JobCard.test.tsx`, `CertificateGroup.test.tsx`, `GalleryTile.test.tsx`
 - Modify: `src/components/BlockRenderer.test.tsx`, `TabbedContent.test.tsx`
 
 **Interfaces:**
 - Consumes: everything from Tasks 1–5.
-- Produces: `Block`, `Tab`, `PortfolioData` (final names) from `src/types.ts`; `BlockRenderer` handling all eight variants with a `container` case that recurses; `deriveSlugs(tabs: { label: string }[]): string[]` exported from `app/page.tsx`.
+- Produces: `Block`, `Tab`, `PortfolioData` (final names) from `src/types.ts`; `BlockRenderer` handling all eight variants with a `container` case that recurses; `deriveSlugs(tabs: { label: string }[]): string[]` exported from `src/lib/tabSlugs.ts`.
 
 - [ ] **Step 1: Finalize `src/types.ts`**
 
@@ -1924,19 +1936,17 @@ export function BlockRenderer({ block }: Props) {
 
 - [ ] **Step 4: Update `app/page.tsx` and `TabbedContent.tsx`**
 
-`app/page.tsx` loses `TAB_ORDER` and the `wrapperClassName` media special case entirely:
+First create `src/lib/tabSlugs.ts`. `deriveSlugs` lives in its own module
+rather than inside `app/page.tsx` so its test does not have to import a
+server component — and with it `getPortfolioContent` and `@netlify/blobs` —
+just to exercise a pure string function:
 
-```tsx
-import { Hero } from '../src/components/Hero';
-import { TabbedContent } from '../src/components/TabbedContent';
-import { getPortfolioContent } from '../src/lib/portfolioContent';
-
-export const dynamic = 'force-dynamic';
-
+```ts
+// src/lib/tabSlugs.ts
+//
 // Tab ids are stable but opaque, so DOM ids come from the label instead —
 // keeping the readable id="tab-teaching" anchors the page has always had,
 // without storing a second identifier that can drift from the label.
-// Exported for its test.
 export function deriveSlugs(tabs: { label: string }[]): string[] {
   const seen = new Map<string, number>();
   return tabs.map((tab, i) => {
@@ -1950,6 +1960,18 @@ export function deriveSlugs(tabs: { label: string }[]): string[] {
     return count === 0 ? base : `${base}-${i}`;
   });
 }
+```
+
+Then `app/page.tsx` loses `TAB_ORDER` and the `wrapperClassName` media
+special case entirely:
+
+```tsx
+import { Hero } from '../src/components/Hero';
+import { TabbedContent } from '../src/components/TabbedContent';
+import { getPortfolioContent } from '../src/lib/portfolioContent';
+import { deriveSlugs } from '../src/lib/tabSlugs';
+
+export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
   const data = await getPortfolioContent();
@@ -1986,6 +2008,18 @@ git rm src/components/JobCard.tsx src/components/JobCard.test.tsx \
        src/components/GalleryTile.tsx src/components/GalleryTile.test.tsx \
        src/components/Note.tsx
 ```
+
+- [ ] **Step 5b: Delete the CSS the old components owned**
+
+Nothing emits these class names once the v1 components are gone — the new
+`Container` emits `layout-surface-card` / `layout-surface-dashed` instead. In
+`src/styles/global.css`, delete the `.block-card`, `.block-card:hover`,
+`.block-card .block-title-row` and `.placeholder` rules.
+
+**Keep** `.tag`, `.tag.accent`, `.gallery-tile` and `.gallery-tile:hover` —
+`Badge` and `MediaPlaceholder` still use them. Task 5 deliberately left all
+of these in place because the v1 components were still live then; this step
+is the cleanup that pairs with deleting those components.
 
 - [ ] **Step 6: Update `BlockRenderer.test.tsx` and `TabbedContent.test.tsx`**
 
@@ -2044,11 +2078,11 @@ describe('BlockRenderer', () => {
 });
 ```
 
-In `TabbedContent.test.tsx`, replace any v1 block fixtures with generic ones (a `heading` block is the simplest) and drop any `wrapperClassName` usage. Add a `deriveSlugs` test in a new `app/page.test.ts`:
+In `TabbedContent.test.tsx`, replace any v1 block fixtures with generic ones (a `heading` block is the simplest) and drop any `wrapperClassName` usage. Add a `deriveSlugs` test in a new `src/lib/tabSlugs.test.ts`:
 
 ```ts
 import { describe, expect, it } from 'vitest';
-import { deriveSlugs } from './page';
+import { deriveSlugs } from './tabSlugs';
 
 describe('deriveSlugs', () => {
   it('slugifies labels', () => {
@@ -2072,7 +2106,7 @@ describe('deriveSlugs', () => {
 
 - [ ] **Step 7: Verify the touched tests only**
 
-Run: `npx vitest run src/lib/contentMigration.test.ts src/lib/sanitizeBlocks.test.ts src/components/BlockRenderer.test.tsx src/components/TabbedContent.test.tsx app/page.test.ts`
+Run: `npx vitest run src/lib/contentMigration.test.ts src/lib/sanitizeBlocks.test.ts src/lib/tabSlugs.test.ts src/components/BlockRenderer.test.tsx src/components/TabbedContent.test.tsx`
 Expected: PASS
 
 Run: `npm run check` → Expected: **FAIL**, with errors confined to `puck.config.tsx`, `src/lib/puckTypes.ts`, `src/lib/puckAdapter.ts`, `src/lib/puckAdapter.test.ts`, `app/admin/actions.ts`, `app/admin/actions.test.ts`, `src/components/PuckAdmin.tsx`. Any error outside that list means something in this task is wrong — fix it before moving on.
@@ -3144,24 +3178,39 @@ git commit -m "Move the save path and admin shell onto the generic model"
 
 - [ ] **Step 1: Generate the v2 seed by running the migration over the v1 file**
 
-Do **not** hand-write it. Per the content-fidelity rule, retyping a real person's CV invites exactly the paraphrasing this project has been bitten by before. Write a throwaway script:
+Do **not** hand-write it. Per the content-fidelity rule, retyping a real
+person's CV invites exactly the paraphrasing this project has been bitten by
+before. The output must come from the migration function.
 
-```bash
-cat > scripts/migrate-seed.mjs <<'EOF'
-import { readFileSync, writeFileSync } from 'node:fs';
-import { migratePortfolioData } from '../dist-migrate/contentMigration.js';
-const v1 = JSON.parse(readFileSync('content/portfolio.json', 'utf8'));
-writeFileSync(
-  'content/portfolio.json',
-  `${JSON.stringify(migratePortfolioData(v1), null, 2)}\n`,
-);
-EOF
-npx tsc src/lib/contentMigration.ts --outDir dist-migrate --module esnext --target es2022 --moduleResolution bundler
-node scripts/migrate-seed.mjs
-rm -rf dist-migrate scripts/migrate-seed.mjs
+Create a throwaway Vitest file at `src/lib/__migrate-seed.test.ts` — running
+it inside Vitest reuses the project's own module resolution, so there is no
+separate build step and no risk of the type-only imports resolving
+differently than they do at runtime:
+
+```ts
+import { writeFileSync } from 'node:fs';
+import { it } from 'vitest';
+import seed from '../../content/portfolio.json';
+import { migratePortfolioData } from './contentMigration';
+
+it('rewrites the seed in the v2 shape', () => {
+  writeFileSync(
+    'content/portfolio.json',
+    `${JSON.stringify(migratePortfolioData(seed), null, 2)}\n`,
+  );
+});
 ```
 
-If the standalone `tsc` invocation fights the type-only imports, an equally valid route is a one-off Vitest test that writes the file — the requirement is only that the output comes from the migration function, not from a person.
+Then:
+
+```bash
+npx vitest run src/lib/__migrate-seed.test.ts && rm src/lib/__migrate-seed.test.ts
+```
+
+Confirm with `git diff content/portfolio.json` that the result is a v2
+document — `"version": 2` at the top, `tabs` an array of seven
+`{ id, label, blocks }` entries — and that no CV prose changed except for
+HTML escaping and the `<p>` wrappers.
 
 - [ ] **Step 2: Verify the seed round-trips**
 
