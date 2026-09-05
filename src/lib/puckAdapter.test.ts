@@ -119,3 +119,43 @@ describe('puckAdapter', () => {
     );
   });
 });
+
+// Regression guard for a real defect found in the phase A final review.
+//
+// The preset components (EntryCard/BadgeRow/MediaGrid) pre-seed slot children
+// through defaultProps. Those children must carry NO `id`: Puck's
+// insertAction calls populateIds(data, config) with two arguments, so its
+// `override` parameter defaults to false, and that branch's child mapper is
+// `{ ...{ id: generated }, ...item.props }` — spreading the item's own props
+// last. An `id` written into defaultProps therefore wins over the generated
+// one and survives verbatim into every insert, so two EntryCards would share
+// ids for their title row, heading, dates, subtitle and bullets. Puck keys
+// its node index and its slot zone compounds (`${parentId}:${propName}`) by
+// id, so the second card would alias the first.
+//
+// This test exists because the opposite was asserted — in a code comment, in
+// the plan and in the spec — on a misreading of that spread order, and only a
+// source-level review caught it. tsc cannot: `Slot` is typed
+// ComponentDataOptionalId[], so `id` is legal there, just wrong.
+describe('preset defaultProps', () => {
+  // biome-ignore lint/suspicious/noExplicitAny: walks arbitrary defaultProps shapes looking for a single key.
+  function idsAtAnyDepth(value: any, out: string[] = []): string[] {
+    if (Array.isArray(value)) {
+      for (const v of value) idsAtAnyDepth(v, out);
+    } else if (value && typeof value === 'object') {
+      for (const [k, v] of Object.entries(value)) {
+        if (k === 'id' && typeof v === 'string') out.push(v);
+        idsAtAnyDepth(v, out);
+      }
+    }
+    return out;
+  }
+
+  it('pre-seeds no ids, so inserting the same preset twice cannot collide', () => {
+    for (const name of ['Container', 'EntryCard', 'BadgeRow', 'MediaGrid']) {
+      const component = puckConfig.components[name as 'Container'];
+      const children = component?.defaultProps?.children ?? [];
+      expect(idsAtAnyDepth(children), `${name} pre-seeds an id`).toEqual([]);
+    }
+  });
+});

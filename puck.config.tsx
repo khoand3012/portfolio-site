@@ -121,9 +121,21 @@ export const puckConfig: Config<PuckComponentProps> = {
     // defaultProps. They are insert-time scaffolding: puckDataToBlocks
     // collapses all four to { type: 'container' }, so an EntryCard reopens
     // as a Container — lossless in content, mildly lossy in labelling.
-    // Puck's insertAction runs populateIds over the whole defaultProps tree
-    // and regenerates a fresh id for every slot child, so inserting the same
-    // preset twice cannot collide; the ids below are placeholders.
+    //
+    // The pre-seeded children below carry NO `id`, and must not. Puck's
+    // insertAction calls populateIds(data, config) with two arguments, so
+    // its `override` parameter defaults to false — and in that branch the
+    // child mapper is `{ ...{ id: generated }, ...item.props }`, spreading
+    // the item's own props LAST. An `id` written here would therefore win
+    // over the generated one and survive verbatim into every insert, so two
+    // EntryCards would share ids for their title row, heading, dates,
+    // subtitle and bullets — and Puck keys its node index and its slot zone
+    // compounds (`${parentId}:${propName}`) by id, so the second card would
+    // alias the first. Omitting `id` is what makes populateIds supply a
+    // fresh one; `Slot` is typed ComponentDataOptionalId[], so this
+    // type-checks. Verified against the installed @puckeditor/core@0.23.0
+    // bundle, not its docs — an earlier comment here asserted the opposite.
+    // src/lib/puckAdapter.test.ts guards it.
     EntryCard: {
       fields: layoutFields,
       defaultProps: {
@@ -135,26 +147,19 @@ export const puckConfig: Config<PuckComponentProps> = {
           {
             type: 'Container',
             props: {
-              id: 'seed-title-row',
               ...BASE_LAYOUT,
               direction: 'row',
               justify: 'between',
               align: 'baseline',
               wrap: true,
               children: [
-                {
-                  type: 'Heading',
-                  props: { id: 'seed-heading', text: '', level: 'h3' },
-                },
-                { type: 'Dates', props: { id: 'seed-dates', text: '' } },
+                { type: 'Heading', props: { text: '', level: 'h3' } },
+                { type: 'Dates', props: { text: '' } },
               ],
             },
           },
-          {
-            type: 'Text',
-            props: { id: 'seed-subtitle', html: '', variant: 'subtitle' },
-          },
-          { type: 'Bullets', props: { id: 'seed-bullets', items: [] } },
+          { type: 'Text', props: { html: '', variant: 'subtitle' } },
+          { type: 'Bullets', props: { items: [] } },
         ],
       },
       render: renderContainer,

@@ -473,13 +473,18 @@ registers `EntryCard`, `BadgeRow`, and `MediaGrid` alongside the plain
 pre-seeded with a title row (heading + dates), a subtitle text, and an empty
 bullets list; `BadgeRow` with `direction: 'row', wrap: true`; `MediaGrid`
 with `direction: 'grid', columns: 'auto'`. (Pre-seeding slot children through
-`defaultProps` is part of the same verified spike above. The ids written into
-those pre-seeded children are placeholders and don't need to be unique:
-Puck's `insertAction` runs `populateIds` over the whole `defaultProps` tree
-and `walkTree` regenerates a fresh `${type}-${uuid}` id for every slot child
-on insert — verified in the installed
-`@puckeditor/core/dist/index.js` — so inserting the same preset twice can't
-collide.) All four collapse
+`defaultProps` is part of the same verified spike above. **Those pre-seeded
+children must carry no `id` of their own.** `insertAction` calls
+`populateIds(data, config)` with two arguments, so its `override` parameter
+takes its default of `false`, and that branch's child mapper is
+`{ ...{ id: generated }, ...item.props }` — the item's own props spread
+*last*. An `id` written into `defaultProps` therefore wins over the generated
+one and survives verbatim into every insert, so two `EntryCard`s would share
+ids for their title row, heading, dates, subtitle and bullets. Puck keys its
+node index and its slot zone compounds (`${parentId}:${propName}`) by id, so
+the second card would alias the first. Omitting `id` is what makes
+`populateIds` supply a fresh one, and `Slot` is typed
+`ComponentDataOptionalId[]`, so omitting it type-checks.) All four collapse
 to the same stored `{ type: 'container' }` in `puckDataToBlocks` — the
 adapter only has to be 1:1 on the way *out*, and it already is the
 translation layer. Presets are insert-time scaffolding, not a persisted
