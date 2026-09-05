@@ -197,6 +197,23 @@ really does discard its blocks, with the timestamped `history/` snapshot as
 the only recovery path — which is why the remove button arms on the first
 click and commits on the second.
 
+**Hero editing.** Hero doesn't go through Puck: it's a single fixed-shape
+record with nothing to add, remove, or reorder, so forcing it into Puck's
+block-list model would mean a config with exactly one permanently-present
+block instance. Instead `src/components/HeroForm.tsx` (reachable from the
+"Edit hero" button beside "Manage tabs") is a plain controlled form over
+every `Hero` field, saved through `saveHeroAction` — same
+auth-check/etag-protected-write/`SaveConflictError`-to-plain-message shape as
+`saveTabBlocksAction` and `saveTabsAction`, because Hero and every tab live
+in one `PortfolioData` document and a concurrent Hero save races a tab save
+the same way two tab saves do. `Hero.dob` renders as another `MetaItem` (a
+new `'calendar'` icon) and `Hero.credential` as a `<p className="credential">`
+under `.role`; both are optional and plain text, never markup. Per this
+file's content-fidelity rule, the capability only: `content/portfolio.json`
+carries no `dob` or `credential` value, because those are the site owner's
+own facts to enter through `/admin`, not something to invent as a
+placeholder.
+
 **Puck AI** (a chat panel for scaffolding/rearranging content) is wired via
 `@puckeditor/plugin-ai`/`@puckeditor/cloud-client`, and needs the site
 owner's own Puck Cloud account and a `PUCK_API_KEY` — the rest of the admin
