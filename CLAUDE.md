@@ -164,9 +164,11 @@ the others could be bypassed, so don't "simplify" this down to fewer checks:
    `/api/puck` before anything renders.
 3. `app/admin/page.tsx` — re-checks the session and allow-list server-side
    before rendering any content, as defense in depth beyond middleware.
-4. `app/admin/actions.ts`'s `saveTabBlocksAction` — re-checks auth again
-   before writing, because server actions can be invoked directly and can't
-   rely on the page having already gated access.
+4. `app/admin/actions.ts`'s `saveTabBlocksAction` and `saveTabsAction` —
+   each re-checks auth again before writing, because server actions can be
+   invoked directly and can't rely on the page having already gated access.
+   A new action added here needs its own check; there is no shared wrapper
+   doing it for you.
 5. `app/api/puck/[...all]/route.ts`'s request handler — re-checks auth
    again before calling `puckHandler`, for a rationale distinct from the
    others: this route spends the Puck Cloud account's metered AI credit on
@@ -180,6 +182,20 @@ and its scaffolding presets `EntryCard`/`BadgeRow`/`MediaGrid`) to
 Puck-editable fields; `src/lib/puckAdapter.ts` converts between this app's
 `Block[]` content model and Puck's own data format;
 `src/components/PuckAdmin.tsx` renders one Puck instance per tab.
+
+**Tab management.** The tab list is content, not code: `src/components/
+TabManager.tsx` (reachable from the "Manage tabs" button beside the content
+tabs in `/admin`) edits the whole list and publishes it through
+`saveTabsAction`, which reconciles it against the freshly-read document in
+one etag-protected write — a matching id keeps that tab's blocks through a
+rename or reorder, an unknown id creates an empty tab, an omitted tab is
+deleted with its content. Two consequences worth knowing before touching
+this: `saveTabBlocksAction` looks its tab up by id in the document it just
+read (not against a static list), so it correctly refuses a save aimed at a
+tab the manager deleted while an editor was still open; and deleting a tab
+really does discard its blocks, with the timestamped `history/` snapshot as
+the only recovery path — which is why the remove button arms on the first
+click and commits on the second.
 
 **Puck AI** (a chat panel for scaffolding/rearranging content) is wired via
 `@puckeditor/plugin-ai`/`@puckeditor/cloud-client`, and needs the site
