@@ -17,7 +17,7 @@ const tabs: Tab[] = [
 describe('TabManager', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(saveTabsAction).mockResolvedValue(undefined);
+    vi.mocked(saveTabsAction).mockResolvedValue(tabs);
   });
 
   it('publishes a rename', async () => {
@@ -97,6 +97,38 @@ describe('TabManager', () => {
     // than redo the work.
     expect(screen.getByLabelText('Tab 1 label')).toHaveValue('Media');
     expect(screen.getByRole('button', { name: 'Publish tabs' })).toBeEnabled();
+  });
+
+  // The admin shell must not wait for a server round-trip to show the new tab
+  // list: router.refresh() re-renders the server component, but nothing in the
+  // client guarantees that lands before the owner looks at the tab bar. The
+  // action returns the reconciled tabs, and the shell takes them directly.
+  it('hands the saved tab list back to the shell on success', async () => {
+    const user = userEvent.setup();
+    const saved: Tab[] = [
+      { id: 'teaching', label: 'Teaching', blocks: [] },
+      { id: 'media', label: 'Media', blocks: [] },
+      { id: 'new-id', label: 'Awards', blocks: [] },
+    ];
+    vi.mocked(saveTabsAction).mockResolvedValue(saved);
+    const onSaved = vi.fn();
+
+    render(<TabManager tabs={tabs} onSaved={onSaved} />);
+    await user.click(screen.getByRole('button', { name: '+ Add tab' }));
+    await user.click(screen.getByRole('button', { name: 'Publish tabs' }));
+
+    expect(onSaved).toHaveBeenCalledWith(saved);
+  });
+
+  it('does not hand back a tab list when the save fails', async () => {
+    const user = userEvent.setup();
+    vi.mocked(saveTabsAction).mockRejectedValue(new Error('Not authorized.'));
+    const onSaved = vi.fn();
+
+    render(<TabManager tabs={tabs} onSaved={onSaved} />);
+    await user.click(screen.getByRole('button', { name: 'Publish tabs' }));
+
+    expect(onSaved).not.toHaveBeenCalled();
   });
 
   it('disables the move buttons at the ends of the list', () => {

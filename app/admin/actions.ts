@@ -191,10 +191,14 @@ function assertBlocksShape(
   });
 }
 
+// Returns the blocks as actually stored — i.e. after sanitization, which
+// rewrites rather than rejects. The admin shell keeps these so switching tabs
+// re-mounts the editor with published content instead of the blocks the page
+// was first rendered with.
 export async function saveTabBlocksAction(
   tabId: string,
   blocks: Block[],
-): Promise<void> {
+): Promise<Block[]> {
   const session = await auth();
   // Re-check server-side even though middleware already gates /admin — this
   // action can in principle be invoked directly, so it must not trust the UI.
@@ -220,8 +224,9 @@ export async function saveTabBlocksAction(
   // Sanitize AFTER the shape guard and before the write: the guard rejects,
   // this rewrites. Disallowed markup is stripped rather than failing the
   // save — see src/lib/sanitizeBlocks.ts.
+  const sanitized = sanitizeBlocks(blocks);
   const tabs = current.tabs.map((tab, i) =>
-    i === index ? { ...tab, blocks: sanitizeBlocks(blocks) } : tab,
+    i === index ? { ...tab, blocks: sanitized } : tab,
   );
   const updated: PortfolioData = { ...current, tabs };
 
@@ -239,6 +244,8 @@ export async function saveTabBlocksAction(
     }
     throw error;
   }
+
+  return sanitized;
 }
 
 const MAX_TABS = 20;
@@ -287,7 +294,12 @@ function assertTabMetasShape(data: unknown): asserts data is TabMeta[] {
   });
 }
 
-export async function saveTabsAction(metas: TabMeta[]): Promise<void> {
+// Returns the reconciled tab list rather than void: the admin shell renders
+// its tab bar from this, instead of waiting for router.refresh() to re-render
+// the server component and hand down fresh props. That round-trip is not
+// something the client can sequence against, which is why a published rename
+// or new tab could sit invisible until a manual reload.
+export async function saveTabsAction(metas: TabMeta[]): Promise<Tab[]> {
   const session = await auth();
   // Re-checked server-side for the same reason as every other action here:
   // a server action can be invoked directly, so it must not trust the UI.
@@ -328,6 +340,8 @@ export async function saveTabsAction(metas: TabMeta[]): Promise<void> {
     }
     throw error;
   }
+
+  return tabs;
 }
 
 const HERO_REQUIRED_FIELDS = ['name', 'initials', 'role', 'profile'] as const;
@@ -355,7 +369,9 @@ function assertHeroShape(data: unknown): asserts data is Hero {
   }
 }
 
-export async function saveHeroAction(hero: Hero): Promise<void> {
+// Returns the saved hero for the same reason saveTabsAction returns its tabs:
+// the shell updates from the value the server actually stored.
+export async function saveHeroAction(hero: Hero): Promise<Hero> {
   const session = await auth();
   // Re-checked server-side for the same reason as every other action here:
   // a server action can be invoked directly, so it must not trust the UI.
@@ -380,4 +396,6 @@ export async function saveHeroAction(hero: Hero): Promise<void> {
     }
     throw error;
   }
+
+  return hero;
 }
