@@ -8,6 +8,7 @@ import type { ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { saveTabBlocksAction } from '../../app/admin/actions';
 import { puckConfig } from '../../puck.config';
+import { hasUnpublishedEdits } from '../lib/draftState';
 import { blocksToPuckData, puckDataToBlocks } from '../lib/puckAdapter';
 import { toast } from '../lib/use-toast';
 import type { Hero, PortfolioData, Tab } from '../types';
@@ -149,6 +150,36 @@ export function PuckAdmin({ initialData, userEmail }: Props) {
     initialData.tabs[0]?.id ?? '',
   );
   const [panel, setPanel] = useState<Panel>(null);
+  // Unpublished edits, per tab. <Puck> is remounted per tab (see key= below),
+  // so its internal state is discarded on every switch — these drafts are what
+  // survive it. They are deliberately in memory only: a reload starts from
+  // published content, which is why leaving the page has to warn first.
+  const [drafts, setDrafts] = useState<Record<string, Data>>({});
+  const [edited, setEdited] = useState<Record<string, boolean>>({});
+  const unsavedTabs = tabs.filter((t) => edited[t.id]);
+
+  // The browser's own leave-site prompt. Its wording is not ours to set —
+  // every engine shows a fixed message — but preventDefault is what makes it
+  // appear at all.
+  useEffect(() => {
+    if (unsavedTabs.length === 0) return;
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [unsavedTabs.length]);
+
+  function handleEditorChange(data: Data) {
+    if (!activeTabId) return;
+    setDrafts((current) => ({ ...current, [activeTabId]: data }));
+    const published = tabs.find((t) => t.id === activeTabId)?.blocks ?? [];
+    setEdited((current) => ({
+      ...current,
+      [activeTabId]: hasUnpublishedEdits(data, published),
+    }));
+  }
 
   // Ref guard, not just an empty dependency array: React 18 Strict Mode
   // (dev only) mounts every effect twice, which would otherwise fire this
@@ -164,6 +195,19 @@ export function PuckAdmin({ initialData, userEmail }: Props) {
 
   function handleTabsSaved(saved: Tab[]) {
     setTabs(saved);
+    // Drop drafts for tabs that no longer exist, so a deleted tab's edits
+    // can't keep the unsaved-changes warning alive with nothing to apply to.
+    const live = new Set(saved.map((t) => t.id));
+    setDrafts((current) =>
+      Object.fromEntries(
+        Object.entries(current).filter(([id]) => live.has(id)),
+      ),
+    );
+    setEdited((current) =>
+      Object.fromEntries(
+        Object.entries(current).filter(([id]) => live.has(id)),
+      ),
+    );
     // The open editor's tab may have just been deleted; fall back to the first
     // remaining one rather than leaving the canvas pointed at nothing.
     if (!saved.some((t) => t.id === activeTabId)) {
@@ -188,6 +232,9 @@ export function PuckAdmin({ initialData, userEmail }: Props) {
           tab.id === activeTabId ? { ...tab, blocks: saved } : tab,
         ),
       );
+      // Published: this tab's draft is now the stored content, so it is no
+      // longer unsaved work and must stop arming the leave-page warning.
+      setEdited((current) => ({ ...current, [activeTabId]: false }));
       toast({ description: 'Saved.' });
       router.refresh();
     } catch (error) {
@@ -233,8 +280,17 @@ export function PuckAdmin({ initialData, userEmail }: Props) {
               type="button"
               className={`tab-btn${t.id === activeTabId ? ' active' : ''}`}
               onClick={() => setActiveTabId(t.id)}
+              title={edited[t.id] ? 'Unpublished changes' : undefined}
             >
               {t.label}
+              {/* Decorative: the meaning is carried by the button's title, so
+                  a screen reader hears the tab name and its state, not a
+                  stray bullet character. */}
+              {edited[t.id] && (
+                <span className="tab-unsaved" aria-hidden="true">
+                  •
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -254,7 +310,11 @@ export function PuckAdmin({ initialData, userEmail }: Props) {
         <Puck
           key={activeTab.id}
           config={puckConfig}
-          data={blocksToPuckData(activeTab.blocks)}
+          // The draft, when this tab has unpublished edits — that is what makes
+          // a tab switch non-destructive. Read once at mount (Puck owns its
+          // state afterwards), which is exactly the semantics needed here.
+          data={drafts[activeTab.id] ?? blocksToPuckData(activeTab.blocks)}
+          onChange={handleEditorChange}
           onPublish={handlePublish}
           plugins={[aiPlugin]}
           overrides={{ headerActions }}

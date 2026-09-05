@@ -728,6 +728,14 @@ footer::before {
    imitating it here. They open these overlays, which sit above the canvas so
    <Puck> stays mounted — its header (and therefore the way back) never
    disappears, and the editor keeps its state. */
+/* Marks a tab holding unpublished edits. Drafts survive tab switches but not
+   a reload, so which tabs are dirty has to be visible without opening each. */
+.tab-unsaved {
+  margin-left: 6px;
+  font-size: 15px;
+  line-height: 1;
+  color: var(--color-accent-default);
+}
 .admin-panel-backdrop {
   position: fixed;
   inset: 0;
