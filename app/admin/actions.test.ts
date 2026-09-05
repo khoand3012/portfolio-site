@@ -127,15 +127,35 @@ describe('saveTabBlocksAction', () => {
     expect(JSON.stringify(saved)).toContain('ok');
   });
 
-  it('accepts a valid nested tree', async () => {
-    await expect(
-      saveTabBlocksAction('teaching', [
-        container({
-          surface: 'card',
-          children: [{ type: 'heading', text: 'Acme', level: 'h3' }],
-        }),
-      ] as never),
-    ).resolves.toBeUndefined();
+  it('accepts a valid nested tree and returns the blocks it stored', async () => {
+    // The returned value is what the admin shell renders after a publish, so
+    // it has to be the sanitized blocks that reached the store — not the
+    // caller's input, which may still carry markup the sanitizer strips.
+    const tree = container({
+      surface: 'card',
+      children: [{ type: 'heading', text: 'Acme', level: 'h3' }],
+    });
+    const returned = await saveTabBlocksAction('teaching', [tree] as never);
+    // .at(-1): this describe block deliberately does not clearAllMocks, so
+    // calls accumulate across its tests — the write under test is the last.
+    const stored = (
+      vi.mocked(savePortfolioContent).mock.calls.at(-1)?.[0] as
+        | PortfolioData
+        | undefined
+    )?.tabs.find((t) => t.id === 'teaching')?.blocks;
+    expect(returned).toEqual(stored);
+  });
+
+  it('returns blocks with disallowed markup already stripped', async () => {
+    const returned = await saveTabBlocksAction('teaching', [
+      {
+        type: 'text',
+        html: '<p>ok<script>bad()</script></p>',
+        variant: 'body',
+      },
+    ] as never);
+    expect(JSON.stringify(returned)).not.toContain('script');
+    expect(JSON.stringify(returned)).toContain('ok');
   });
 
   it('surfaces a clear conflict message when the store detects a concurrent save', async () => {
@@ -358,17 +378,16 @@ describe('saveHeroAction', () => {
   });
 
   it('accepts a hero with every optional field present, including dob and credential', async () => {
-    await expect(
-      saveHeroAction({
-        ...validHero,
-        phone: '+1 555',
-        email: 'a@b.com',
-        linkedin: 'linkedin.com/in/x',
-        location: 'Hanoi',
-        dob: '1 Jan 1995',
-        credential: 'PRINCE2 Practitioner',
-      }),
-    ).resolves.toBeUndefined();
+    const full = {
+      ...validHero,
+      phone: '+1 555',
+      email: 'a@b.com',
+      linkedin: 'linkedin.com/in/x',
+      location: 'Hanoi',
+      dob: '1 Jan 1995',
+      credential: 'PRINCE2 Practitioner',
+    };
+    await expect(saveHeroAction(full)).resolves.toEqual(full);
     expect(savedDoc().hero).toMatchObject({
       dob: '1 Jan 1995',
       credential: 'PRINCE2 Practitioner',
@@ -376,7 +395,7 @@ describe('saveHeroAction', () => {
   });
 
   it('accepts a hero with every optional field absent', async () => {
-    await expect(saveHeroAction(validHero)).resolves.toBeUndefined();
+    await expect(saveHeroAction(validHero)).resolves.toEqual(validHero);
   });
 
   it('leaves tabs and footer untouched', async () => {

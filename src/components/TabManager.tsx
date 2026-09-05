@@ -8,6 +8,12 @@ import type { Tab } from '../types';
 
 interface Props {
   tabs: Tab[];
+  /**
+   * Handed the reconciled tab list the server actually saved, so the admin
+   * shell can render the new tab bar immediately instead of waiting on
+   * router.refresh() to deliver fresh server props.
+   */
+  onSaved?: (tabs: Tab[]) => void;
 }
 
 interface Row {
@@ -20,7 +26,7 @@ interface Row {
 // admin panel and reads as a browser alert rather than part of the page; an
 // arm-then-confirm button keeps the destructive step inside the UI and
 // names the tab it is about to remove.
-export function TabManager({ tabs }: Props) {
+export function TabManager({ tabs, onSaved }: Props) {
   const router = useRouter();
   const [rows, setRows] = useState<Row[]>(() =>
     tabs.map((t) => ({ id: t.id, label: t.label })),
@@ -64,8 +70,11 @@ export function TabManager({ tabs }: Props) {
   async function publish() {
     setSaving(true);
     try {
-      await saveTabsAction(rows.map(({ id, label }) => ({ id, label })));
+      const saved = await saveTabsAction(
+        rows.map(({ id, label }) => ({ id, label })),
+      );
       toast({ description: 'Tabs saved.' });
+      onSaved?.(saved);
       // Same reason handlePublish refreshes: `tabs` came from a
       // server-fetched prop that does not update itself, and a newly
       // created tab has to exist in that data before its editor can open.

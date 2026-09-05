@@ -723,15 +723,72 @@ footer::before {
 /* Admin tab manager. Only ever rendered inside /admin, but it lives here
    with everything else — this project keeps one stylesheet, and splitting
    admin styles out is where per-component drift would start. */
-.tab-sep {
-  width: 1px;
-  align-self: stretch;
-  margin: var(--spacing-sm) var(--spacing-sm);
-  background: var(--color-border-default);
-  flex: 0 0 auto;
+/* "Edit hero" and "Manage tabs" live in Puck's own header beside Publish,
+   built from Puck's exported <Button>, so they inherit its theme rather than
+   imitating it here. They open these overlays, which sit above the canvas so
+   <Puck> stays mounted — its header (and therefore the way back) never
+   disappears, and the editor keeps its state. */
+.admin-panel-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: var(--spacing-xl) var(--spacing-md);
+  background: rgba(38, 24, 12, 0.45);
+  overflow-y: auto;
 }
-.tab-btn-admin {
-  font-style: italic;
+.admin-panel {
+  width: 100%;
+  max-width: 1080px;
+  background: var(--color-bg-page);
+  border-radius: var(--radius-md);
+  box-shadow: 0 18px 48px rgba(38, 24, 12, 0.28);
+}
+.admin-panel-bar {
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--spacing-sm) var(--spacing-md) 0;
+}
+.admin-panel-close {
+  padding: var(--spacing-sm) var(--spacing-md);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  background: var(--color-bg-content);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.admin-panel-close:hover {
+  border-color: var(--color-border-strong);
+}
+.admin-panel-close:focus-visible {
+  outline: 2px solid var(--color-accent-default);
+  outline-offset: 1px;
+}
+.admin-panel-body {
+  padding-bottom: var(--spacing-md);
+}
+.admin-empty {
+  padding-top: var(--spacing-xl);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+.admin-empty button {
+  padding: var(--spacing-sm) var(--spacing-md);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  background: var(--color-bg-content);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
 }
 .tab-manager {
   padding-top: var(--spacing-xl);

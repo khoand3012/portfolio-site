@@ -8,6 +8,8 @@ import type { Hero } from '../types';
 
 interface Props {
   hero: Hero;
+  /** Handed the hero the server actually saved — see TabManager's onSaved. */
+  onSaved?: (hero: Hero) => void;
 }
 
 // Hero doesn't fit Puck's editing model — it's a single fixed-shape record
@@ -37,7 +39,7 @@ function toHero(fields: Record<string, string>): Hero {
   return hero;
 }
 
-export function HeroForm({ hero }: Props) {
+export function HeroForm({ hero, onSaved }: Props) {
   const router = useRouter();
   const [fields, setFields] = useState<Record<string, string>>({
     name: hero.name,
@@ -60,8 +62,9 @@ export function HeroForm({ hero }: Props) {
   async function publish() {
     setSaving(true);
     try {
-      await saveHeroAction(toHero(fields));
+      const saved = await saveHeroAction(toHero(fields));
       toast({ description: 'Hero saved.' });
+      onSaved?.(saved);
       router.refresh();
     } catch (error) {
       toast({

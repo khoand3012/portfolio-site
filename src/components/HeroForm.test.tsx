@@ -25,7 +25,7 @@ const hero: Hero = {
 describe('HeroForm', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(saveHeroAction).mockResolvedValue(undefined);
+    vi.mocked(saveHeroAction).mockResolvedValue(hero);
   });
 
   it('pre-fills every field from the current hero', () => {
