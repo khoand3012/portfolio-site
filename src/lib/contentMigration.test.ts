@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { Block } from '../types';
 import v1Fixture from './__fixtures__/portfolio-v1.json';
+import seedFixture from '../../content/portfolio.json';
 import { migratePortfolioData } from './contentMigration';
+import { sanitizeBlocks } from './sanitizeBlocks';
 
 /** Every string reachable in a v1 document, in document order. */
 function collectStrings(value: unknown, out: string[] = []): string[] {
@@ -241,5 +243,27 @@ describe('migratePortfolioData', () => {
       /unrecognized/i,
     );
     expect(() => migratePortfolioData(null)).toThrow(/unrecognized/i);
+  });
+});
+
+// The seed is the one document that reaches the public page WITHOUT passing
+// through saveTabBlocksAction, so sanitizeBlocks never runs on it: a fresh
+// deploy with nothing saved renders content/portfolio.json directly, and
+// migratePortfolioData short-circuits on version === 2. Before the generic
+// model that file was plain text rendered as text; now it carries HTML that
+// Text.tsx and Bullets.tsx inject with dangerouslySetInnerHTML. CLAUDE.md
+// still tells maintainers they may hand-edit it for a from-scratch deploy.
+//
+// Asserting the file is already a fixed point of the sanitizer turns "the
+// seed is safe" into a checked claim at zero runtime cost, and fails loudly
+// if anyone hand-edits a script tag or an onerror attribute into it.
+describe('the checked-in seed', () => {
+  it('is already sanitized — sanitizeBlocks is a no-op on every tab', () => {
+    const seed = migratePortfolioData(seedFixture);
+    for (const tab of seed.tabs) {
+      expect(sanitizeBlocks(tab.blocks), `tab "${tab.label}"`).toEqual(
+        tab.blocks,
+      );
+    }
   });
 });
