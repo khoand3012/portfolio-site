@@ -28,6 +28,66 @@ const LAYOUT = {
 
 type AnyRender = (props: Record<string, unknown>) => ReactElement;
 
+// A block inserted from the Blocks panel arrives with its defaultProps. If
+// those are empty strings the block renders as an empty element with no
+// content, which collapses to 0px in the editor: invisible, unselectable,
+// and impossible to aim a drag at. Every insertable block must render
+// something visible before the owner has typed anything.
+const LEAF_COMPONENTS = [
+  'Heading',
+  'Text',
+  'Dates',
+  'Bullets',
+  'Badge',
+  'Image',
+  'Video',
+] as const;
+
+// biome-ignore lint/suspicious/noExplicitAny: reading Puck's config shape generically in a test.
+type AnySpec = { type: string; props: any };
+
+// biome-ignore lint/suspicious/noExplicitAny: reading Puck's config shape generically in a test.
+function leafSpecs(children: any[]): AnySpec[] {
+  return (children ?? []).flatMap((child: AnySpec) =>
+    child.type === 'Container' || child.type === 'EntryCard'
+      ? leafSpecs(child.props?.children ?? [])
+      : [child],
+  );
+}
+
+// biome-ignore lint/suspicious/noExplicitAny: reading Puck's config shape generically in a test.
+const components = puckConfig.components as any;
+
+function renderWith(type: string, props: unknown): string {
+  const renderFn = components[type].render as AnyRender;
+  const { container } = render(
+    renderFn({ ...(props as Record<string, unknown>) }),
+  );
+  return container.textContent?.trim() ?? '';
+}
+
+describe('blocks inserted from the Blocks panel are visible', () => {
+  it.each(LEAF_COMPONENTS)(
+    '%s renders content from its defaultProps',
+    (name) => {
+      expect(
+        renderWith(name, components[name].defaultProps).length,
+      ).toBeGreaterThan(0);
+    },
+  );
+
+  it('seeds every block in the EntryCard preset with visible content', () => {
+    const seeded = leafSpecs(components.EntryCard.defaultProps.children);
+    expect(seeded.length).toBeGreaterThan(0);
+    for (const spec of seeded) {
+      expect(
+        renderWith(spec.type, spec.props).length,
+        `${spec.type} in the EntryCard preset renders nothing`,
+      ).toBeGreaterThan(0);
+    }
+  });
+});
+
 describe("puck.config Container render (the editor's path)", () => {
   // Two constraints pull in opposite directions here.
   //

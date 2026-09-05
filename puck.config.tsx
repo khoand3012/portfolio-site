@@ -62,7 +62,9 @@ const bulletsField = {
   arrayFields: {
     text: { type: 'richtext' as const, options: INLINE_RICHTEXT },
   },
-  defaultItemProps: { text: '' },
+  // Placeholder rather than '': an empty <li> collapses to 0px, so a newly
+  // added bullet would be invisible and unselectable until typed into.
+  defaultItemProps: { text: '<p>New bullet</p>' },
   getItemSummary: (item: { text: string }) =>
     item.text.replace(/<[^>]*>/g, '') || 'Bullet',
   ai: {
@@ -172,13 +174,22 @@ export const puckConfig: Config<PuckComponentProps> = {
               align: 'baseline',
               wrap: true,
               children: [
-                { type: 'Heading', props: { text: '', level: 'h3' } },
-                { type: 'Dates', props: { text: '' } },
+                {
+                  type: 'Heading',
+                  props: { text: 'Organisation or title', level: 'h3' },
+                },
+                { type: 'Dates', props: { text: 'Dates' } },
               ],
             },
           },
-          { type: 'Text', props: { html: '', variant: 'subtitle' } },
-          { type: 'Bullets', props: { items: [] } },
+          {
+            type: 'Text',
+            props: { html: '<p>Role or subtitle</p>', variant: 'subtitle' },
+          },
+          {
+            type: 'Bullets',
+            props: { items: [{ text: '<p>New bullet</p>' }] },
+          },
         ],
       },
       render: renderContainer,
@@ -223,7 +234,7 @@ export const puckConfig: Config<PuckComponentProps> = {
           ],
         },
       },
-      defaultProps: { text: '', level: 'h3' },
+      defaultProps: { text: 'New heading', level: 'h3' },
       render: (props) => (
         <Heading
           block={{ type: 'heading', text: props.text, level: props.level }}
@@ -251,7 +262,7 @@ export const puckConfig: Config<PuckComponentProps> = {
           ],
         },
       },
-      defaultProps: { html: '', variant: 'body' },
+      defaultProps: { html: '<p>New text</p>', variant: 'body' },
       render: (props) => (
         <Text
           block={{ type: 'text', html: props.html, variant: props.variant }}
@@ -260,12 +271,12 @@ export const puckConfig: Config<PuckComponentProps> = {
     },
     Dates: {
       fields: { text: { type: 'text' } },
-      defaultProps: { text: '' },
+      defaultProps: { text: 'Dates' },
       render: (props) => <Dates block={{ type: 'dates', text: props.text }} />,
     },
     Bullets: {
       fields: { items: bulletsField },
-      defaultProps: { items: [] },
+      defaultProps: { items: [{ text: '<p>New bullet</p>' }] },
       render: (props) => (
         <Bullets
           block={{ type: 'bullets', items: props.items.map((i) => i.text) }}
@@ -290,7 +301,7 @@ export const puckConfig: Config<PuckComponentProps> = {
           ],
         },
       },
-      defaultProps: { text: '', year: '', accent: false },
+      defaultProps: { text: 'New badge', year: '', accent: false },
       render: (props) => (
         <Badge
           block={{
