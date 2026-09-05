@@ -54,6 +54,12 @@ reliable signal.)
   stylesheet, not per-component scoped styles. Keep it that way;
   splitting styles across components is where visual regressions creep in
   for a page this size.
+- Surface and leaf block CSS classes (`.text-*`, `.bullet-list`, `.tag`,
+  `.media-*`, etc.) carry no outer spacing or padding of their own — the
+  `container` block owns all of it via its `layout-p-*`/`layout-gap-*`/
+  `layout-mb-*` classes (see `Container.tsx`). Adding margin or padding to a
+  leaf component's own class double-spaces it against the container that
+  wraps it; if spacing looks off, fix the container's layout props instead.
 
 After any change, run `npm run check` (`tsc --noEmit`), `npm run test`, and
 `npm run build` before committing.
@@ -73,22 +79,58 @@ around the initial redesign for the reasoning.
 ## Keep `src/types.ts` in sync with `content/portfolio.json`
 
 `src/types.ts`'s `PortfolioData`/`Block` types are a hand-maintained copy of
-`content/portfolio.json`'s shape (a discriminated union over `job`,
-`placeholder`, `education`, `certificate-group`, `gallery-item`, `note` — a
-real, deliberate schema, not a naming detail). If you add/rename/remove a
-field, update `types.ts` and the corresponding component in
-`src/components/` in the same change — `npm run check` (`tsc --noEmit`)
-will not catch a JSON field that no longer matches the type unless the type
-itself is updated too.
+`content/portfolio.json`'s shape. The six hard-coded variants this section
+used to describe (`job`, `placeholder`, `education`, `certificate-group`,
+`gallery-item`, `note`) are gone. The content model is now generic: a
+`Block` is a discriminated union over eight variants — `container`,
+`heading`, `text`, `dates`, `bullets`, `badge`, `image`, `video` —
+and every one of the old CV-specific layouts (a job entry, a certificate
+row, a gallery card) is now just a `container` composed from these
+primitives. `container` is the recursive case: its `children` field is
+itself `Block[]`, so containers nest arbitrarily deep. If you add, rename,
+or remove a field on any variant, update `types.ts` and the corresponding
+component in `src/components/` in the same change — `npm run check`
+(`tsc --noEmit`) will not catch a JSON field that no longer matches the
+type unless the type itself is updated too.
 
-This type now has more downstream consumers than just the JSON import,
-since content also flows through the admin panel: `app/admin/actions.ts`'s
-`assertBlocksShape` runtime-validates incoming blocks against this same
-shape before a save is allowed to reach the content store, and
-`puck.config.tsx` / `src/lib/puckAdapter.ts` map each `Block` variant to and
-from Puck's editor data format. A `Block` field change that isn't reflected
-in all of these can pass `tsc` while still breaking a save at runtime or
-silently dropping a field in the Puck editor — update them together.
+`ContainerBlock`'s layout fields (`direction`, `gap`, `padding`,
+`marginBottom`, `align`, `justify`, `columns`, `wrap`, `surface`) are
+constrained string unions, and `src/lib/layoutOptions.ts` is the single
+source of truth for their allowed values — three consumers read from it and
+none may keep its own copy: `puck.config.tsx`'s `select` field `options`,
+`app/admin/actions.ts`'s `assertBlocksShape` allow-list checks, and
+`Container.tsx`'s className mapping. Add a layout value there, not in any
+of the three consumers, or the dropdown, the save-time validator, and the
+rendered class name will drift apart.
+
+Two fields hold sanitized HTML rather than plain text: `TextBlock.html` and
+`BulletsBlock.items`. Puck's richtext field is Tiptap-backed and stores
+`editor.getHTML()`, and `Text.tsx`/`Bullets.tsx` render that with
+`dangerouslySetInnerHTML` — so `src/lib/sanitizeBlocks.ts` runs at the save
+boundary in `app/admin/actions.ts` to strip anything outside a small
+allow-list (`p`, `br`, `strong`, `em`, `u`, `a`) before it can reach the
+content store. Every other `Block` field (`heading.text`, `dates.text`,
+`badge.text`, …) is plain text, rendered as text, never as markup.
+
+This type has more downstream consumers than just the JSON import, since
+content also flows through the admin panel: `assertBlocksShape` (above)
+runtime-validates incoming blocks against this same shape before a save
+reaches the content store, and `puck.config.tsx` / `src/lib/puckAdapter.ts`
+map each `Block` variant to and from Puck's editor data format. A `Block`
+field change that isn't reflected in all of these can pass `tsc` while
+still breaking a save at runtime or silently dropping a field in the Puck
+editor — update them together.
+
+`src/lib/contentMigration.ts`'s `migratePortfolioData` upgrades a stored v1
+document (the old six-variant shape) to this v2 generic model, and it runs
+on **every read** of a still-v1 document (see `portfolioContent.ts`), not
+as a one-off script — production content lives in Netlify Blobs with no
+convenient script access, and running it on read covers every `history/`
+snapshot for free. It must stay deterministic: no `randomUUID()` inside
+it. `saveTabBlocksAction` looks a tab up by id inside its own
+read-modify-write, and a migrated tab keeps its v1 object key verbatim as
+its id — an invented random id per read would make that lookup miss and
+fail every save against an unmigrated document.
 
 ## The admin panel at `/admin` is real, deliberate, and current — do not remove it
 
@@ -132,11 +174,12 @@ the others could be bypassed, so don't "simplify" this down to fewer checks:
    needs to be blocked before it reaches Puck's API, not just before it
    can write anything.
 
-**The editor:** `puck.config.tsx` (repo root) maps this app's existing
-components (`JobCard`, `EducationCard`, etc.) to Puck-editable fields;
-`src/lib/puckAdapter.ts` converts between this app's `Block[]` content model
-and Puck's own data format; `src/components/PuckAdmin.tsx` renders one Puck
-instance per tab.
+**The editor:** `puck.config.tsx` (repo root) maps this app's generic block
+components (`Heading`, `Text`, `Bullets`, `Badge`, etc., plus `Container`
+and its scaffolding presets `EntryCard`/`BadgeRow`/`MediaGrid`) to
+Puck-editable fields; `src/lib/puckAdapter.ts` converts between this app's
+`Block[]` content model and Puck's own data format;
+`src/components/PuckAdmin.tsx` renders one Puck instance per tab.
 
 **Puck AI** (a chat panel for scaffolding/rearranging content) is wired via
 `@puckeditor/plugin-ai`/`@puckeditor/cloud-client`, and needs the site
@@ -158,9 +201,9 @@ definitions, not just its docs:
 1. `ai.context` in `app/api/puck/[...all]/route.ts` — a handler-level system
    prompt instructing the AI to only scaffold or rearrange, never rewrite
    existing real content.
-2. Per-field `ai.instructions` in `puck.config.tsx` — six specific
-   fields/components carry instructions like "never rewrite an existing
-   bullet's text".
+2. Per-field `ai.instructions` in `puck.config.tsx` — four fields, one
+   each on the `Bullets`, `Heading`, `Text`, and `Badge` components, carry
+   instructions like "never rewrite an existing bullet's text".
 3. `ai.mode: 'assembly'`, also set in `app/api/puck/[...all]/route.ts` — a
    genuine config-level constraint (confirmed as a real typed SDK option,
    not just a documented convention) that locks Puck AI to composing from

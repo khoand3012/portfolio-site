@@ -1,4 +1,5 @@
 {
+  "version": 2,
   "hero": {
     "name": "Truong Nam Nguyen",
     "initials": "TNN",
@@ -9,179 +10,528 @@
     "location": "Hanoi, Vietnam",
     "profile": "Professional with 5+ years of experience in international education, project coordination, and administrative operations within UK higher education and international organisations. Proven capacity to support funded education programmes, manage multi-stakeholder coordination, ensure procedural compliance, and deliver high-quality administrative and financial support in complex, regulated environments."
   },
-  "tabs": {
-    "teaching": {
+  "tabs": [
+    {
+      "id": "teaching",
       "label": "Teaching",
       "blocks": [
         {
-          "type": "job",
-          "company": "AMES English — Hanoi",
-          "dates": "2019 – 2021",
-          "role": "English Teacher (Examination Preparation)",
-          "bullets": [
-            "Delivered IELTS preparation programmes to diverse learner groups, supporting over 500 students in achieving academic language proficiency targets.",
-            "Developed structured learning plans, assessment strategies, and progress reports aligned with international examination standards."
-          ]
+          "type": "container",
+          "children": [
+            {
+              "type": "container",
+              "children": [
+                {
+                  "type": "heading",
+                  "text": "AMES English — Hanoi",
+                  "level": "h3"
+                },
+                {
+                  "type": "dates",
+                  "text": "2019 – 2021"
+                }
+              ],
+              "direction": "row",
+              "gap": "sm",
+              "padding": "none",
+              "marginBottom": "none",
+              "align": "baseline",
+              "justify": "between",
+              "columns": "auto",
+              "wrap": true,
+              "surface": "none"
+            },
+            {
+              "type": "text",
+              "html": "<p>English Teacher (Examination Preparation)</p>",
+              "variant": "subtitle"
+            },
+            {
+              "type": "bullets",
+              "items": [
+                "<p>Delivered IELTS preparation programmes to diverse learner groups, supporting over 500 students in achieving academic language proficiency targets.</p>",
+                "<p>Developed structured learning plans, assessment strategies, and progress reports aligned with international examination standards.</p>"
+              ]
+            }
+          ],
+          "direction": "stack",
+          "gap": "sm",
+          "padding": "lg",
+          "marginBottom": "lg",
+          "align": "stretch",
+          "justify": "start",
+          "columns": "auto",
+          "wrap": false,
+          "surface": "card"
         },
         {
-          "type": "placeholder",
-          "company": "Hanoi Metropolitan University",
-          "note": "Add role, dates, and responsibilities here."
+          "type": "container",
+          "children": [
+            {
+              "type": "heading",
+              "text": "Hanoi Metropolitan University",
+              "level": "h3"
+            },
+            {
+              "type": "text",
+              "html": "<p>Add role, dates, and responsibilities here.</p>",
+              "variant": "body"
+            }
+          ],
+          "direction": "stack",
+          "gap": "sm",
+          "padding": "xl",
+          "marginBottom": "lg",
+          "align": "stretch",
+          "justify": "start",
+          "columns": "auto",
+          "wrap": false,
+          "surface": "dashed"
         },
         {
-          "type": "placeholder",
-          "company": "Alpaca Edu Co. LTD",
-          "note": "Add role, dates, and responsibilities here."
+          "type": "container",
+          "children": [
+            {
+              "type": "heading",
+              "text": "Alpaca Edu Co. LTD",
+              "level": "h3"
+            },
+            {
+              "type": "text",
+              "html": "<p>Add role, dates, and responsibilities here.</p>",
+              "variant": "body"
+            }
+          ],
+          "direction": "stack",
+          "gap": "sm",
+          "padding": "xl",
+          "marginBottom": "lg",
+          "align": "stretch",
+          "justify": "start",
+          "columns": "auto",
+          "wrap": false,
+          "surface": "dashed"
         }
       ]
     },
-    "internationalEducation": {
+    {
+      "id": "internationalEducation",
       "label": "International Education",
       "blocks": [
         {
-          "type": "job",
-          "company": "University of Huddersfield (UK) — International Office",
-          "dates": "2022 – 2025",
-          "role": "International Administrator",
-          "bullets": [
-            "Coordinated international education programmes including inbound/outbound student mobility and funded exchange schemes (e.g. UK Turing Scheme 2023–2024, International Summer Camp).",
-            "Liaised with partner universities, academic faculties, and external stakeholders to plan, implement, and monitor programme activities.",
-            "Supported budget planning and financial monitoring for mobility programmes, ensuring alignment with approved funding frameworks.",
-            "Provided comprehensive administrative support for international students and senior academic management, including official correspondence, documentation, and database management.",
-            "Maintained and updated partner and recruitment databases via CRM systems (ASIS), ensuring data accuracy and compliance.",
-            "Supported the organisation of international events, orientations, academic workshops, and official visits."
-          ]
+          "type": "container",
+          "children": [
+            {
+              "type": "container",
+              "children": [
+                {
+                  "type": "heading",
+                  "text": "University of Huddersfield (UK) — International Office",
+                  "level": "h3"
+                },
+                {
+                  "type": "dates",
+                  "text": "2022 – 2025"
+                }
+              ],
+              "direction": "row",
+              "gap": "sm",
+              "padding": "none",
+              "marginBottom": "none",
+              "align": "baseline",
+              "justify": "between",
+              "columns": "auto",
+              "wrap": true,
+              "surface": "none"
+            },
+            {
+              "type": "text",
+              "html": "<p>International Administrator</p>",
+              "variant": "subtitle"
+            },
+            {
+              "type": "bullets",
+              "items": [
+                "<p>Coordinated international education programmes including inbound/outbound student mobility and funded exchange schemes (e.g. UK Turing Scheme 2023–2024, International Summer Camp).</p>",
+                "<p>Liaised with partner universities, academic faculties, and external stakeholders to plan, implement, and monitor programme activities.</p>",
+                "<p>Supported budget planning and financial monitoring for mobility programmes, ensuring alignment with approved funding frameworks.</p>",
+                "<p>Provided comprehensive administrative support for international students and senior academic management, including official correspondence, documentation, and database management.</p>",
+                "<p>Maintained and updated partner and recruitment databases via CRM systems (ASIS), ensuring data accuracy and compliance.</p>",
+                "<p>Supported the organisation of international events, orientations, academic workshops, and official visits.</p>"
+              ]
+            }
+          ],
+          "direction": "stack",
+          "gap": "sm",
+          "padding": "lg",
+          "marginBottom": "lg",
+          "align": "stretch",
+          "justify": "start",
+          "columns": "auto",
+          "wrap": false,
+          "surface": "card"
         },
         {
-          "type": "job",
-          "company": "British Council Vietnam LLC",
-          "dates": "2025 – Present",
-          "role": "Exams Operation Officer",
-          "bullets": [
-            "Coordinate the delivery of high-stakes international examinations (IELTS, APTIS ESOL, Cambridge AS/A Level) across 10+ test centres nationwide.",
-            "Provide administrative and operational oversight for examination cycles, including logistics planning, documentation, reporting, and audit preparation.",
-            "Supervise and support 200+ venue staff and test-day supervisors, contributing to standardised procedures and service quality assurance.",
-            "Contribute to internal audits, compliance reviews, and process improvement initiatives."
-          ]
+          "type": "container",
+          "children": [
+            {
+              "type": "container",
+              "children": [
+                {
+                  "type": "heading",
+                  "text": "British Council Vietnam LLC",
+                  "level": "h3"
+                },
+                {
+                  "type": "dates",
+                  "text": "2025 – Present"
+                }
+              ],
+              "direction": "row",
+              "gap": "sm",
+              "padding": "none",
+              "marginBottom": "none",
+              "align": "baseline",
+              "justify": "between",
+              "columns": "auto",
+              "wrap": true,
+              "surface": "none"
+            },
+            {
+              "type": "text",
+              "html": "<p>Exams Operation Officer</p>",
+              "variant": "subtitle"
+            },
+            {
+              "type": "bullets",
+              "items": [
+                "<p>Coordinate the delivery of high-stakes international examinations (IELTS, APTIS ESOL, Cambridge AS/A Level) across 10+ test centres nationwide.</p>",
+                "<p>Provide administrative and operational oversight for examination cycles, including logistics planning, documentation, reporting, and audit preparation.</p>",
+                "<p>Supervise and support 200+ venue staff and test-day supervisors, contributing to standardised procedures and service quality assurance.</p>",
+                "<p>Contribute to internal audits, compliance reviews, and process improvement initiatives.</p>"
+              ]
+            }
+          ],
+          "direction": "stack",
+          "gap": "sm",
+          "padding": "lg",
+          "marginBottom": "lg",
+          "align": "stretch",
+          "justify": "start",
+          "columns": "auto",
+          "wrap": false,
+          "surface": "card"
         }
       ]
     },
-    "testing": {
+    {
+      "id": "testing",
       "label": "English Language Testing and Exams",
       "blocks": [
         {
-          "type": "certificate-group",
-          "heading": "Certificates",
-          "certificates": [
+          "type": "container",
+          "children": [
             {
-              "text": "IELTS Academic — Overall 8.0 (2025)",
-              "accent": true
+              "type": "heading",
+              "text": "Certificates",
+              "level": "h3"
             },
             {
-              "text": "Chinese Proficiency Test — HSK Level 3 (2018)",
-              "accent": false
+              "type": "container",
+              "children": [
+                {
+                  "type": "badge",
+                  "text": "IELTS Academic — Overall 8.0 (2025)",
+                  "accent": true
+                },
+                {
+                  "type": "badge",
+                  "text": "Chinese Proficiency Test — HSK Level 3 (2018)",
+                  "accent": false
+                }
+              ],
+              "direction": "row",
+              "gap": "sm",
+              "padding": "none",
+              "marginBottom": "none",
+              "align": "stretch",
+              "justify": "start",
+              "columns": "auto",
+              "wrap": true,
+              "surface": "none"
             }
-          ]
+          ],
+          "direction": "stack",
+          "gap": "sm",
+          "padding": "lg",
+          "marginBottom": "lg",
+          "align": "stretch",
+          "justify": "start",
+          "columns": "auto",
+          "wrap": false,
+          "surface": "card"
         },
         {
-          "type": "job",
-          "company": "Exams Operation Officer — British Council Vietnam",
-          "dates": "2025 – Present",
-          "role": "",
-          "bullets": [
-            "Coordinate delivery of high-stakes international examinations (IELTS, APTIS ESOL, Cambridge AS/A Level) across 10+ test centres nationwide, ensuring strict compliance with global security and operational standards.",
-            "Manage risk assessment and incident response, ensuring exam integrity, candidate safety, and institutional reputation.",
-            "Contribute to internal audits, compliance reviews, and process improvement initiatives strengthening operational efficiency and governance."
-          ]
+          "type": "container",
+          "children": [
+            {
+              "type": "container",
+              "children": [
+                {
+                  "type": "heading",
+                  "text": "Exams Operation Officer — British Council Vietnam",
+                  "level": "h3"
+                },
+                {
+                  "type": "dates",
+                  "text": "2025 – Present"
+                }
+              ],
+              "direction": "row",
+              "gap": "sm",
+              "padding": "none",
+              "marginBottom": "none",
+              "align": "baseline",
+              "justify": "between",
+              "columns": "auto",
+              "wrap": true,
+              "surface": "none"
+            },
+            {
+              "type": "bullets",
+              "items": [
+                "<p>Coordinate delivery of high-stakes international examinations (IELTS, APTIS ESOL, Cambridge AS/A Level) across 10+ test centres nationwide, ensuring strict compliance with global security and operational standards.</p>",
+                "<p>Manage risk assessment and incident response, ensuring exam integrity, candidate safety, and institutional reputation.</p>",
+                "<p>Contribute to internal audits, compliance reviews, and process improvement initiatives strengthening operational efficiency and governance.</p>"
+              ]
+            }
+          ],
+          "direction": "stack",
+          "gap": "sm",
+          "padding": "lg",
+          "marginBottom": "lg",
+          "align": "stretch",
+          "justify": "start",
+          "columns": "auto",
+          "wrap": false,
+          "surface": "card"
         },
         {
-          "type": "note",
-          "text": "Add further testing/exam-specific achievements, statistics, or accreditations here."
+          "type": "container",
+          "children": [
+            {
+              "type": "text",
+              "html": "<p>Add further testing/exam-specific achievements, statistics, or accreditations here.</p>",
+              "variant": "body"
+            }
+          ],
+          "direction": "stack",
+          "gap": "sm",
+          "padding": "xl",
+          "marginBottom": "lg",
+          "align": "stretch",
+          "justify": "start",
+          "columns": "auto",
+          "wrap": false,
+          "surface": "dashed"
         }
       ]
     },
-    "academicBackground": {
+    {
+      "id": "academicBackground",
       "label": "Academic Background",
       "blocks": [
         {
-          "type": "education",
-          "school": "University of Huddersfield — United Kingdom",
-          "dates": "2021 – 2022",
-          "degree": "Master of Arts in Education (Technology Enhanced Learning)",
-          "bullets": [
-            "Final grade: Passed with Distinction. Awarded University Scholarship for South-East Asia Excellence."
+          "type": "container",
+          "children": [
+            {
+              "type": "container",
+              "children": [
+                {
+                  "type": "heading",
+                  "text": "University of Huddersfield — United Kingdom",
+                  "level": "h3"
+                },
+                {
+                  "type": "dates",
+                  "text": "2021 – 2022"
+                }
+              ],
+              "direction": "row",
+              "gap": "sm",
+              "padding": "none",
+              "marginBottom": "none",
+              "align": "baseline",
+              "justify": "between",
+              "columns": "auto",
+              "wrap": true,
+              "surface": "none"
+            },
+            {
+              "type": "text",
+              "html": "<p>Master of Arts in Education (Technology Enhanced Learning)</p>",
+              "variant": "subtitle"
+            },
+            {
+              "type": "bullets",
+              "items": [
+                "<p>Final grade: Passed with Distinction. Awarded University Scholarship for South-East Asia Excellence.</p>"
+              ]
+            },
+            {
+              "type": "text",
+              "html": "<p>Mobile Learning Practices in Vietnamese Higher Education Institutions</p>",
+              "variant": "small"
+            }
           ],
-          "dissertation": "Mobile Learning Practices in Vietnamese Higher Education Institutions"
+          "direction": "stack",
+          "gap": "sm",
+          "padding": "lg",
+          "marginBottom": "lg",
+          "align": "stretch",
+          "justify": "start",
+          "columns": "auto",
+          "wrap": false,
+          "surface": "card"
         },
         {
-          "type": "education",
-          "school": "University of Languages and International Studies — VNU, Vietnam",
-          "dates": "2015 – 2019",
-          "degree": "Bachelor of Arts in TESOL (Minor: Simplified Chinese)",
-          "bullets": ["Graduated with Distinction (GPA: 3.5/4.0)."],
-          "dissertation": ""
+          "type": "container",
+          "children": [
+            {
+              "type": "container",
+              "children": [
+                {
+                  "type": "heading",
+                  "text": "University of Languages and International Studies — VNU, Vietnam",
+                  "level": "h3"
+                },
+                {
+                  "type": "dates",
+                  "text": "2015 – 2019"
+                }
+              ],
+              "direction": "row",
+              "gap": "sm",
+              "padding": "none",
+              "marginBottom": "none",
+              "align": "baseline",
+              "justify": "between",
+              "columns": "auto",
+              "wrap": true,
+              "surface": "none"
+            },
+            {
+              "type": "text",
+              "html": "<p>Bachelor of Arts in TESOL (Minor: Simplified Chinese)</p>",
+              "variant": "subtitle"
+            },
+            {
+              "type": "bullets",
+              "items": ["<p>Graduated with Distinction (GPA: 3.5/4.0).</p>"]
+            }
+          ],
+          "direction": "stack",
+          "gap": "sm",
+          "padding": "lg",
+          "marginBottom": "lg",
+          "align": "stretch",
+          "justify": "start",
+          "columns": "auto",
+          "wrap": false,
+          "surface": "card"
         }
       ]
     },
-    "publications": {
+    {
+      "id": "publications",
       "label": "Publications",
       "blocks": [
         {
-          "type": "note",
-          "text": "No publications added yet — add articles, papers, or dissertations here (e.g. your MA dissertation \"Mobile Learning Practices in Vietnamese Higher Education Institutions\")."
+          "type": "container",
+          "children": [
+            {
+              "type": "text",
+              "html": "<p>No publications added yet — add articles, papers, or dissertations here (e.g. your MA dissertation \"Mobile Learning Practices in Vietnamese Higher Education Institutions\").</p>",
+              "variant": "body"
+            }
+          ],
+          "direction": "stack",
+          "gap": "sm",
+          "padding": "xl",
+          "marginBottom": "lg",
+          "align": "stretch",
+          "justify": "start",
+          "columns": "auto",
+          "wrap": false,
+          "surface": "dashed"
         }
       ]
     },
-    "talks": {
+    {
+      "id": "talks",
       "label": "Talks/Workshops/Seminars",
       "blocks": [
         {
-          "type": "note",
-          "text": "No talks, workshops, or seminars added yet — add speaking engagements, facilitated workshops, or seminars here."
+          "type": "container",
+          "children": [
+            {
+              "type": "text",
+              "html": "<p>No talks, workshops, or seminars added yet — add speaking engagements, facilitated workshops, or seminars here.</p>",
+              "variant": "body"
+            }
+          ],
+          "direction": "stack",
+          "gap": "sm",
+          "padding": "xl",
+          "marginBottom": "lg",
+          "align": "stretch",
+          "justify": "start",
+          "columns": "auto",
+          "wrap": false,
+          "surface": "dashed"
         }
       ]
     },
-    "media": {
+    {
+      "id": "media",
       "label": "Photos and Videos",
       "blocks": [
         {
-          "type": "gallery-item",
-          "itemType": "photo",
-          "image": "",
-          "videoUrl": ""
-        },
-        {
-          "type": "gallery-item",
-          "itemType": "photo",
-          "image": "",
-          "videoUrl": ""
-        },
-        {
-          "type": "gallery-item",
-          "itemType": "video",
-          "image": "",
-          "videoUrl": ""
-        },
-        {
-          "type": "gallery-item",
-          "itemType": "photo",
-          "image": "",
-          "videoUrl": ""
-        },
-        {
-          "type": "gallery-item",
-          "itemType": "video",
-          "image": "",
-          "videoUrl": ""
-        },
-        {
-          "type": "gallery-item",
-          "itemType": "photo",
-          "image": "",
-          "videoUrl": ""
+          "type": "container",
+          "children": [
+            {
+              "type": "image"
+            },
+            {
+              "type": "image"
+            },
+            {
+              "type": "video",
+              "mode": "link"
+            },
+            {
+              "type": "image"
+            },
+            {
+              "type": "video",
+              "mode": "link"
+            },
+            {
+              "type": "image"
+            }
+          ],
+          "direction": "grid",
+          "gap": "md",
+          "padding": "none",
+          "marginBottom": "none",
+          "align": "stretch",
+          "justify": "start",
+          "columns": "auto",
+          "wrap": false,
+          "surface": "none"
         }
       ]
     }
-  },
+  ],
   "footer": "Truong Nam Nguyen · Hanoi, Vietnam · truongnam307@gmail.com"
 }
