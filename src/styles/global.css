@@ -225,6 +225,19 @@ a.meta-item:hover {
   background: var(--color-bg-surface);
   font-weight: 700;
 }
+/* The admin bar carries the site's tabs PLUS "Edit hero" and "Manage tabs",
+   and those two sit last. Inheriting the public page's 1040px `.wrap` cap
+   and its `overflow-x: auto` with a deliberately hidden scrollbar pushed
+   both buttons off the right edge with no affordance that anything was
+   there — the editing surface was reachable only by blind scrolling. The
+   editor canvas below is already full-width, so the bar wraps onto a second
+   line instead of scrolling: with up to MAX_TABS (20) tabs, wrapping is the
+   only option that keeps every control reachable at any width. */
+.tabs-admin .wrap {
+  max-width: none;
+  flex-wrap: wrap;
+  overflow-x: visible;
+}
 
 /* Content */
 main {

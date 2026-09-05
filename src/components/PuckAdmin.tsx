@@ -85,7 +85,7 @@ export function PuckAdmin({ initialData, userEmail }: Props) {
 
   return (
     <div>
-      <nav className="tabs">
+      <nav className="tabs tabs-admin">
         <div className="wrap">
           {initialData.tabs.map((t) => (
             <button
