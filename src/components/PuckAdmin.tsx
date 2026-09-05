@@ -1,7 +1,7 @@
 'use client';
 
 import type { Data } from '@puckeditor/core';
-import { Button, Puck, usePuck } from '@puckeditor/core';
+import { Button, Puck } from '@puckeditor/core';
 import { createAiPlugin } from '@puckeditor/plugin-ai';
 import { useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
@@ -67,37 +67,6 @@ const PREVIEW_ICON = icon(
     <circle cx="12" cy="12" r="3" />
   </>,
 );
-const EDIT_ICON = icon(
-  <>
-    <path d="M12 20h9" />
-    <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" />
-  </>,
-);
-
-// Puck's own previewMode: 'interactive' renders the page as a visitor sees it
-// (links clickable, no drag handles), 'edit' is the editor. Toggling it shows
-// UNSAVED work, which opening the public site in a tab cannot do — the public
-// page only ever renders what has been published.
-function PreviewToggle() {
-  const { appState, dispatch } = usePuck();
-  const previewing = appState.ui.previewMode === 'interactive';
-
-  return (
-    <Button
-      variant="secondary"
-      icon={previewing ? EDIT_ICON : PREVIEW_ICON}
-      onClick={() =>
-        dispatch({
-          type: 'setUi',
-          ui: { previewMode: previewing ? 'edit' : 'interactive' },
-        })
-      }
-    >
-      {previewing ? 'Back to editing' : 'Preview'}
-    </Button>
-  );
-}
-
 function PanelOverlay({
   title,
   onClose,
@@ -251,7 +220,12 @@ export function PuckAdmin({ initialData, userEmail }: Props) {
   // before it so Publish stays the last, primary action.
   const headerActions = ({ children }: { children: ReactNode }) => (
     <>
-      <PreviewToggle />
+      {/* Opens the live public page in a new tab. Note this shows PUBLISHED
+          content — unpublished edits in this editor will not appear there
+          until they are published. */}
+      <Button variant="secondary" icon={PREVIEW_ICON} href="/" newTab>
+        Preview
+      </Button>
       <Button
         variant="secondary"
         icon={HERO_ICON}

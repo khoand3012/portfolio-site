@@ -824,6 +824,27 @@ footer::before {
   gap: var(--spacing-sm);
   flex-wrap: wrap;
 }
+/* Only the handle is draggable — making the whole row draggable would stop
+   click-dragging to select text inside the label input. */
+.tab-manager-handle {
+  flex: 0 0 auto;
+  padding: 0 var(--spacing-xs);
+  font-size: 16px;
+  line-height: 1;
+  color: var(--color-text-primary);
+  cursor: grab;
+  user-select: none;
+}
+.tab-manager-handle:active {
+  cursor: grabbing;
+}
+.tab-manager-row.dragging {
+  opacity: 0.5;
+}
+.tab-manager-row.drop-target {
+  outline: 2px dashed var(--color-accent-default);
+  outline-offset: 2px;
+}
 .tab-manager-row input {
   flex: 1 1 220px;
   min-width: 0;

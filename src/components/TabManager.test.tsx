@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -129,6 +129,39 @@ describe('TabManager', () => {
     await user.click(screen.getByRole('button', { name: 'Publish tabs' }));
 
     expect(onSaved).not.toHaveBeenCalled();
+  });
+
+  // Dragging is the quick path; the ↑/↓ buttons stay because HTML5 drag and
+  // drop is unusable from a keyboard, and reordering must not become a
+  // mouse-only capability.
+  it('reorders when a row is dragged onto another', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<TabManager tabs={tabs} />);
+    const handles = container.querySelectorAll('.tab-manager-handle');
+    const rows = screen.getAllByRole('listitem');
+
+    fireEvent.dragStart(handles[1] as Element);
+    fireEvent.dragOver(rows[0] as Element);
+    fireEvent.drop(rows[0] as Element);
+
+    expect(screen.getByLabelText('Tab 1 label')).toHaveValue('Media');
+    await user.click(screen.getByRole('button', { name: 'Publish tabs' }));
+    expect(saveTabsAction).toHaveBeenCalledWith([
+      { id: 'media', label: 'Media' },
+      { id: 'teaching', label: 'Teaching' },
+    ]);
+  });
+
+  it('leaves the order alone when a row is dropped on itself', () => {
+    const { container } = render(<TabManager tabs={tabs} />);
+    const handles = container.querySelectorAll('.tab-manager-handle');
+    const rows = screen.getAllByRole('listitem');
+
+    fireEvent.dragStart(handles[0] as Element);
+    fireEvent.drop(rows[0] as Element);
+
+    expect(screen.getByLabelText('Tab 1 label')).toHaveValue('Teaching');
+    expect(screen.getByLabelText('Tab 2 label')).toHaveValue('Media');
   });
 
   it('disables the move buttons at the ends of the list', () => {
