@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import seedFixture from '../../content/portfolio.json';
 import type { Block } from '../types';
 import v1Fixture from './__fixtures__/portfolio-v1.json';
-import seedFixture from '../../content/portfolio.json';
 import { migratePortfolioData } from './contentMigration';
 import { sanitizeBlocks } from './sanitizeBlocks';
 
