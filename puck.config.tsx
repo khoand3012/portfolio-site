@@ -21,7 +21,10 @@ import type { Config } from '@puckeditor/core';
 import type { ComponentType } from 'react';
 import { Badge } from './src/components/Badge';
 import { Bullets } from './src/components/Bullets';
-import { Container } from './src/components/Container';
+import {
+  containerBoxClassName,
+  containerFlowClassName,
+} from './src/components/Container';
 import { Dates } from './src/components/Dates';
 import { Heading } from './src/components/Heading';
 import { Image } from './src/components/Image';
@@ -59,7 +62,9 @@ const bulletsField = {
   arrayFields: {
     text: { type: 'richtext' as const, options: INLINE_RICHTEXT },
   },
-  defaultItemProps: { text: '' },
+  // Placeholder rather than '': an empty <li> collapses to 0px, so a newly
+  // added bullet would be invisible and unselectable until typed into.
+  defaultItemProps: { text: '<p>New bullet</p>' },
   getItemSummary: (item: { text: string }) =>
     item.text.replace(/<[^>]*>/g, '') || 'Bullet',
   ai: {
@@ -99,15 +104,31 @@ const BASE_LAYOUT: Omit<ContainerProps, 'children'> = {
   surface: 'none',
 };
 
+// Splits the container's classes across two elements, which the public page
+// keeps as one. Puck renders a slot as its own drop-zone element and makes
+// the blocks that element's children, so:
+//
+//   - The FLOW classes go on the drop zone (Puck forwards `className` onto it
+//     — see DropZoneEdit in @puckeditor/core, whose own rule sets no
+//     `display`, so ours composes cleanly). Without this the flex container
+//     has exactly one child, the drop zone, and `direction: row` has nothing
+//     to act on: containers look vertical in the editor while rendering
+//     correctly on the public page.
+//   - The BOX classes stay on an outer element, so the drop zone remains
+//     NESTED inside the component element. Puck's area/zone depth tracking
+//     decides which zone accepts a drop, and it treats those as distinct
+//     nodes; collapsing them makes a drag into an empty container land in
+//     the parent zone, dropping the block below the container instead of
+//     inside it.
 const renderContainer = ({
   children: Children,
   ...layout
 }: {
-  children: ComponentType;
+  children: ComponentType<{ className?: string }>;
 } & Omit<ContainerProps, 'children'>) => (
-  <Container {...layout}>
-    <Children />
-  </Container>
+  <div className={containerBoxClassName(layout)}>
+    <Children className={containerFlowClassName(layout)} />
+  </div>
 );
 
 export const puckConfig: Config<PuckComponentProps> = {
@@ -153,13 +174,22 @@ export const puckConfig: Config<PuckComponentProps> = {
               align: 'baseline',
               wrap: true,
               children: [
-                { type: 'Heading', props: { text: '', level: 'h3' } },
-                { type: 'Dates', props: { text: '' } },
+                {
+                  type: 'Heading',
+                  props: { text: 'Organisation or title', level: 'h3' },
+                },
+                { type: 'Dates', props: { text: 'Dates' } },
               ],
             },
           },
-          { type: 'Text', props: { html: '', variant: 'subtitle' } },
-          { type: 'Bullets', props: { items: [] } },
+          {
+            type: 'Text',
+            props: { html: '<p>Role or subtitle</p>', variant: 'subtitle' },
+          },
+          {
+            type: 'Bullets',
+            props: { items: [{ text: '<p>New bullet</p>' }] },
+          },
         ],
       },
       render: renderContainer,
@@ -204,7 +234,7 @@ export const puckConfig: Config<PuckComponentProps> = {
           ],
         },
       },
-      defaultProps: { text: '', level: 'h3' },
+      defaultProps: { text: 'New heading', level: 'h3' },
       render: (props) => (
         <Heading
           block={{ type: 'heading', text: props.text, level: props.level }}
@@ -232,7 +262,7 @@ export const puckConfig: Config<PuckComponentProps> = {
           ],
         },
       },
-      defaultProps: { html: '', variant: 'body' },
+      defaultProps: { html: '<p>New text</p>', variant: 'body' },
       render: (props) => (
         <Text
           block={{ type: 'text', html: props.html, variant: props.variant }}
@@ -241,12 +271,12 @@ export const puckConfig: Config<PuckComponentProps> = {
     },
     Dates: {
       fields: { text: { type: 'text' } },
-      defaultProps: { text: '' },
+      defaultProps: { text: 'Dates' },
       render: (props) => <Dates block={{ type: 'dates', text: props.text }} />,
     },
     Bullets: {
       fields: { items: bulletsField },
-      defaultProps: { items: [] },
+      defaultProps: { items: [{ text: '<p>New bullet</p>' }] },
       render: (props) => (
         <Bullets
           block={{ type: 'bullets', items: props.items.map((i) => i.text) }}
@@ -271,7 +301,7 @@ export const puckConfig: Config<PuckComponentProps> = {
           ],
         },
       },
-      defaultProps: { text: '', year: '', accent: false },
+      defaultProps: { text: 'New badge', year: '', accent: false },
       render: (props) => (
         <Badge
           block={{

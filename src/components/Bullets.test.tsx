@@ -44,6 +44,23 @@ describe('Bullets', () => {
     expect(container.querySelectorAll('li')).toHaveLength(2);
   });
 
+  // Inside the Puck editor a bullet item is NOT the stored string: Puck's
+  // richtext field transform swaps it for a React element (the inline
+  // editor) before calling this component. Injecting that as innerHTML
+  // renders the literal text "[object Object]" on the editor canvas.
+  it('renders a React node item as a child rather than as innerHTML', () => {
+    const { container } = render(
+      <Bullets
+        block={{
+          type: 'bullets',
+          items: [<em key="a">inline editor</em>] as never,
+        }}
+      />,
+    );
+    expect(within(container).getByText('inline editor').tagName).toBe('EM');
+    expect(container.textContent).not.toContain('[object Object]');
+  });
+
   it('renders nothing at all when there are no items', () => {
     // Not an empty <ul>: an empty list still draws list padding, so a
     // bullets block the owner has not filled in yet would leave a gap.
