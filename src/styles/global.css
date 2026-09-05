@@ -1,38 +1,34 @@
 :root {
-  /* Primitives — unchanged palette (navy blue / graphite grey / mint green / white) */
-  --navy-900: #0b1e33;
-  --navy-700: #14324f;
-  --navy-500: #1e4b73;
-  --navy-300: #6e93b3;
-  --navy-100: #d6e4ef;
-  --mint-900: #04231b;
-  --mint-700: #0b4a3a;
-  --mint-500: #0f7a5c;
-  --mint-300: #5fbfa0;
-  --mint-100: #d8f0e8;
-  --graphite-900: #1b1e22;
-  --graphite-700: #3a3f45;
-  --graphite-500: #6b7280;
-  --graphite-300: #a8aeb8;
-  --graphite-100: #e3e5e8;
-  --graphite-50: #f4f5f6;
-  --white: #ffffff;
+  /* Primitives — warm sand palette (cream / gold / amber / rust / brown) */
+  --sand-100: #f5e0b3;
+  --sand-300: #f2c94c;
+  --sand-500: #e8a54a;
+  --sand-700: #d77d2b;
+  --sand-900: #7a4b2b;
 
   /* Semantic */
-  --color-bg-page: var(--white);
-  --color-bg-surface: var(--graphite-50);
-  --color-bg-inverse: var(--navy-900);
-  --color-bg-accent-subtle: var(--mint-100);
-  --color-text-primary: var(--graphite-900);
-  --color-text-secondary: var(--graphite-500);
-  --color-text-inverse: var(--white);
-  --color-text-on-accent: var(--white);
-  --color-border-default: var(--graphite-100);
-  --color-border-strong: var(--graphite-300);
-  --color-primary-default: var(--navy-500);
-  --color-primary-hover: var(--navy-700);
-  --color-accent-default: var(--mint-500);
-  --color-accent-hover: var(--mint-700);
+  --color-bg-page: var(--sand-100);
+  --color-bg-content: var(--sand-300);
+  --color-bg-surface: var(--sand-500);
+  --color-bg-inverse: var(--sand-900);
+  --color-bg-accent-subtle: var(--sand-300);
+  --color-text-primary: var(--sand-900);
+  /* Full-strength brown, same as text-primary: at any lower opacity this
+     drops below WCAG AA's 4.5:1 body-text minimum against the cream page
+     background (verified — 90% brown blended toward cream measures
+     4.58:1, 75% measures 3.38:1, already failing). Hierarchy for
+     lower-emphasis text comes from font-size/weight elsewhere, not a
+     lighter color, because the palette doesn't have a second shade that's
+     both distinct from full brown and still legible on cream. */
+  --color-text-secondary: var(--sand-900);
+  --color-text-inverse: var(--sand-100);
+  --color-text-on-accent: var(--sand-100);
+  --color-border-default: var(--sand-500);
+  --color-border-strong: var(--sand-700);
+  --color-primary-default: var(--sand-900);
+  --color-primary-hover: var(--sand-700);
+  --color-accent-default: var(--sand-700);
+  --color-accent-hover: var(--sand-900);
 
   /* Typography */
   --font-headline: "Source Serif 4", Georgia, "Times New Roman", serif;
@@ -85,7 +81,7 @@ a {
 /* Hero */
 .hero {
   position: relative;
-  background: linear-gradient(155deg, var(--navy-900) 0%, var(--navy-700) 100%);
+  background: linear-gradient(155deg, var(--sand-900) 0%, var(--sand-700) 100%);
   color: var(--color-text-inverse);
   padding: var(--spacing-3xl) 0 var(--spacing-2xl);
   overflow: hidden;
@@ -96,7 +92,7 @@ a {
   inset: 0;
   background: radial-gradient(
     560px 320px at 88% -10%,
-    rgba(95, 191, 160, 0.16),
+    rgba(242, 201, 76, 0.16),
     transparent 70%
   );
   pointer-events: none;
@@ -123,8 +119,17 @@ a {
 .hero .role {
   font-size: 17px;
   font-weight: 500;
-  color: var(--mint-100);
+  color: var(--sand-100);
   margin: 0 0 var(--spacing-md);
+}
+/* Sits directly under .role, so hierarchy comes from size/weight — not a
+   lighter shade of --sand-100, which is already this block's dimmest legible
+   tone against the hero's dark background. */
+.credential {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--sand-100);
+  margin: calc(-1 * var(--spacing-sm)) 0 var(--spacing-md);
 }
 .avatar {
   flex-shrink: 0;
@@ -132,14 +137,14 @@ a {
   height: 76px;
   border-radius: var(--radius-full);
   background: rgba(255, 255, 255, 0.06);
-  border: 1.5px solid var(--mint-300);
+  border: 1.5px solid var(--sand-300);
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: var(--font-headline);
   font-size: 22px;
   font-weight: 700;
-  color: var(--mint-100);
+  color: var(--sand-100);
   letter-spacing: 0.5px;
 }
 .meta-row {
@@ -153,23 +158,23 @@ a {
   align-items: center;
   gap: 7px;
   font-size: 13.5px;
-  color: var(--navy-100);
+  color: var(--sand-100);
   text-decoration: none;
 }
 a.meta-item:hover {
-  color: var(--white);
+  color: var(--sand-300);
   text-decoration: underline;
 }
 .meta-item svg {
   width: 14px;
   height: 14px;
-  color: var(--mint-300);
+  color: var(--sand-300);
   flex-shrink: 0;
 }
 .hero .profile {
   font-size: 15.5px;
   line-height: 1.65;
-  color: var(--navy-100);
+  color: var(--sand-100);
   max-width: 660px;
   margin: 0;
 }
@@ -205,7 +210,6 @@ a.meta-item:hover {
   cursor: pointer;
   white-space: nowrap;
   border-bottom: 2.5px solid transparent;
-  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
   transition:
     color 0.15s ease,
     border-color 0.15s ease,
@@ -245,78 +249,38 @@ main {
   }
 }
 
-.block-card {
-  background: var(--color-bg-page);
-  border: 1px solid var(--color-border-default);
-  border-radius: var(--radius-md);
-  padding: var(--spacing-lg);
-  margin-bottom: var(--spacing-lg);
-  box-shadow: var(--shadow-sm);
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease,
-    border-color 0.2s ease;
-}
-.block-card:hover {
-  transform: translateY(-2px);
-  border-color: var(--color-border-strong);
-  box-shadow:
-    var(--shadow-md),
-    inset 3px 0 0 var(--color-accent-default);
-}
-.block-card .block-title-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: var(--spacing-sm);
-  margin-bottom: var(--spacing-xs);
-}
-.block-card h3 {
+.block-heading {
   font-family: var(--font-headline);
   font-size: 18px;
   font-weight: 700;
+  color: var(--color-text-primary);
   margin: 0;
 }
-.block-card .dates {
+.dates {
   font-size: 13px;
   color: var(--color-text-secondary);
   white-space: nowrap;
 }
-.block-card .role {
-  font-size: 12.5px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  color: var(--color-primary-default);
-  margin-bottom: var(--spacing-sm);
-}
-.block-card ul {
+.bullet-list {
   margin: 0;
   padding-left: 18px;
   font-size: 14px;
   color: var(--color-text-secondary);
 }
-.block-card li {
+.bullet-list li {
   margin-bottom: var(--spacing-xs);
 }
-.block-card li:last-child {
+.bullet-list li:last-child {
   margin-bottom: 0;
 }
-.block-card li b {
+.bullet-list li b {
   color: var(--color-text-primary);
   font-weight: 600;
 }
-.block-card li::marker {
+.bullet-list li::marker {
   color: var(--color-accent-default);
 }
 
-.tag-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-sm);
-  margin-top: var(--spacing-md);
-}
 .tag {
   display: inline-flex;
   align-items: center;
@@ -334,36 +298,7 @@ main {
   border-color: var(--color-accent-default);
 }
 
-/* Placeholder blocks (no content provided yet) */
-.placeholder {
-  background: var(--color-bg-surface);
-  border: 1px dashed var(--color-border-strong);
-  border-radius: var(--radius-md);
-  padding: var(--spacing-xl);
-  margin-bottom: var(--spacing-lg);
-  color: var(--color-text-secondary);
-  font-size: 14px;
-  font-style: italic;
-  text-align: center;
-}
-.placeholder.card {
-  text-align: left;
-  font-style: normal;
-}
-.placeholder.card h3 {
-  font-style: normal;
-  font-family: var(--font-headline);
-  font-size: 18px;
-  color: var(--color-text-primary);
-  margin: 0 0 var(--spacing-xs);
-}
-
 /* Gallery */
-.gallery-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: var(--spacing-md);
-}
 .gallery-tile {
   aspect-ratio: 4 / 3;
   border-radius: var(--radius-md);
@@ -449,7 +384,7 @@ footer::before {
   padding-right: var(--spacing-xl);
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border-default);
-  background: var(--color-bg-page);
+  background: var(--color-bg-content);
   box-shadow: var(--shadow-lg);
   pointer-events: auto;
 }
@@ -488,7 +423,7 @@ footer::before {
   color: var(--color-text-secondary);
 }
 .toast-destructive .toast-description {
-  color: var(--mint-100);
+  color: var(--sand-100);
 }
 
 .toast-close {
@@ -509,7 +444,7 @@ footer::before {
   background: var(--color-bg-surface);
 }
 .toast-destructive .toast-close:hover {
-  background: var(--navy-700);
+  background: var(--sand-700);
 }
 
 .toast-action {
@@ -549,4 +484,390 @@ footer::before {
   to {
     transform: translateX(100%);
   }
+}
+
+/* Generic layout containers. One class per stored layout value — see
+   src/lib/layoutOptions.ts, which is the single source of truth these
+   class names must stay in step with. */
+.layout {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.layout-dir-stack {
+  flex-direction: column;
+}
+.layout-dir-row {
+  flex-direction: row;
+}
+.layout-dir-grid {
+  display: grid;
+}
+.layout-wrap {
+  flex-wrap: wrap;
+}
+
+.layout-gap-none {
+  gap: 0;
+}
+.layout-gap-xs {
+  gap: var(--spacing-xs);
+}
+.layout-gap-sm {
+  gap: var(--spacing-sm);
+}
+.layout-gap-md {
+  gap: var(--spacing-md);
+}
+.layout-gap-lg {
+  gap: var(--spacing-lg);
+}
+.layout-gap-xl {
+  gap: var(--spacing-xl);
+}
+
+.layout-p-none {
+  padding: 0;
+}
+.layout-p-xs {
+  padding: var(--spacing-xs);
+}
+.layout-p-sm {
+  padding: var(--spacing-sm);
+}
+.layout-p-md {
+  padding: var(--spacing-md);
+}
+.layout-p-lg {
+  padding: var(--spacing-lg);
+}
+.layout-p-xl {
+  padding: var(--spacing-xl);
+}
+
+.layout-mb-none {
+  margin-bottom: 0;
+}
+.layout-mb-xs {
+  margin-bottom: var(--spacing-xs);
+}
+.layout-mb-sm {
+  margin-bottom: var(--spacing-sm);
+}
+.layout-mb-md {
+  margin-bottom: var(--spacing-md);
+}
+.layout-mb-lg {
+  margin-bottom: var(--spacing-lg);
+}
+.layout-mb-xl {
+  margin-bottom: var(--spacing-xl);
+}
+
+.layout-align-start {
+  align-items: flex-start;
+}
+.layout-align-center {
+  align-items: center;
+}
+.layout-align-end {
+  align-items: flex-end;
+}
+.layout-align-stretch {
+  align-items: stretch;
+}
+.layout-align-baseline {
+  align-items: baseline;
+}
+
+.layout-justify-start {
+  justify-content: flex-start;
+}
+.layout-justify-center {
+  justify-content: center;
+}
+.layout-justify-end {
+  justify-content: flex-end;
+}
+.layout-justify-between {
+  justify-content: space-between;
+}
+
+.layout-dir-grid.layout-cols-1 {
+  grid-template-columns: 1fr;
+}
+.layout-dir-grid.layout-cols-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+.layout-dir-grid.layout-cols-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+.layout-dir-grid.layout-cols-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+.layout-dir-grid.layout-cols-auto {
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
+
+.layout-surface-card {
+  background: var(--color-bg-content);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+.layout-surface-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-border-strong);
+  box-shadow:
+    var(--shadow-md),
+    inset 3px 0 0 var(--color-accent-default);
+}
+.layout-surface-dashed {
+  background: var(--color-bg-surface);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+}
+
+/* Text variants. Hierarchy comes from size and weight only — never a
+   lighter shade, which would fail WCAG AA against the cream background. */
+.text-body {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+.text-small {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+.text-subtitle {
+  font-size: 12.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--color-primary-default);
+}
+.text-body p,
+.text-small p,
+.text-subtitle p {
+  margin: 0 0 var(--spacing-sm);
+}
+.text-body p:last-child,
+.text-small p:last-child,
+.text-subtitle p:last-child {
+  margin-bottom: 0;
+}
+
+/* Inline marks produced by the rich-text editor. */
+.text-body a,
+.text-small a,
+.bullet-list a {
+  color: var(--color-accent-default);
+  text-decoration: underline;
+}
+.text-body strong,
+.text-small strong,
+.bullet-list strong {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+/* Tiptap always wraps a list item's content in a block node, so each
+   bullet's stored HTML is <p>…</p>. Zero its margin rather than doing
+   string surgery on the HTML in the render path. */
+.bullet-list li > p {
+  margin: 0;
+}
+
+.tag-year {
+  font-size: 10px;
+  font-weight: 700;
+  margin-right: var(--spacing-xs);
+}
+
+.media-figure {
+  margin: 0;
+}
+.media-image,
+.media-video {
+  width: 100%;
+  border-radius: var(--radius-md);
+  display: block;
+}
+.media-image {
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+.media-caption {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin-top: var(--spacing-xs);
+}
+
+/* Admin tab manager. Only ever rendered inside /admin, but it lives here
+   with everything else — this project keeps one stylesheet, and splitting
+   admin styles out is where per-component drift would start. */
+.tab-sep {
+  width: 1px;
+  align-self: stretch;
+  margin: var(--spacing-sm) var(--spacing-sm);
+  background: var(--color-border-default);
+  flex: 0 0 auto;
+}
+.tab-btn-admin {
+  font-style: italic;
+}
+.tab-manager {
+  padding-top: var(--spacing-xl);
+  padding-bottom: var(--spacing-xl);
+}
+.tab-manager h2 {
+  font-family: var(--font-headline);
+  margin: 0 0 var(--spacing-xs);
+}
+.tab-manager-hint {
+  font-size: 14px;
+  margin: 0 0 var(--spacing-lg);
+}
+.tab-manager-list {
+  list-style: none;
+  margin: 0 0 var(--spacing-lg);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+.tab-manager-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+.tab-manager-row input {
+  flex: 1 1 220px;
+  min-width: 0;
+  padding: var(--spacing-sm) var(--spacing-md);
+  font: inherit;
+  font-size: 14px;
+  color: var(--color-text-primary);
+  background: var(--color-bg-content);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+}
+.tab-manager-row input:focus-visible,
+.tab-manager button:focus-visible {
+  outline: 2px solid var(--color-accent-default);
+  outline-offset: 1px;
+}
+.tab-manager button {
+  padding: var(--spacing-sm) var(--spacing-md);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  background: var(--color-bg-content);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.tab-manager button:hover:not(:disabled) {
+  border-color: var(--color-border-strong);
+}
+.tab-manager button:disabled {
+  /* Reduced contrast is acceptable here and only here: a disabled control
+     is not body text, and its state has to be perceivable without relying
+     on a second shade of the palette for reading. */
+  opacity: 0.45;
+  cursor: default;
+}
+/* Selector is specific enough to beat `.tab-manager button` above on its
+   own; !important would work too but starts an arms race in a stylesheet
+   this small. */
+.tab-manager button.tab-manager-confirm {
+  background: var(--color-accent-default);
+  border-color: var(--color-accent-default);
+  color: var(--color-text-on-accent);
+}
+.tab-manager-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+.tab-manager-warning {
+  margin: var(--spacing-md) 0 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Hero form — reuses .tab-manager's input/button treatment rather than
+   redeclaring it, since both are plain admin forms on the same page. */
+.hero-form {
+  padding-top: var(--spacing-xl);
+  padding-bottom: var(--spacing-xl);
+}
+.hero-form h2 {
+  font-family: var(--font-headline);
+  margin: 0 0 var(--spacing-xs);
+}
+.hero-form-hint {
+  font-size: 14px;
+  margin: 0 0 var(--spacing-lg);
+}
+.hero-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+.hero-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  font-size: 13px;
+  font-weight: 600;
+}
+.hero-form-field input,
+.hero-form-field textarea {
+  padding: var(--spacing-sm) var(--spacing-md);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--color-text-primary);
+  background: var(--color-bg-content);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+}
+.hero-form-field input:focus-visible,
+.hero-form-field textarea:focus-visible,
+.hero-form button:focus-visible {
+  outline: 2px solid var(--color-accent-default);
+  outline-offset: 1px;
+}
+.hero-form-profile {
+  margin-bottom: var(--spacing-lg);
+}
+.hero-form-profile textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+.hero-form button {
+  padding: var(--spacing-sm) var(--spacing-md);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  background: var(--color-bg-content);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.hero-form button:hover:not(:disabled) {
+  border-color: var(--color-border-strong);
+}
+.hero-form button:disabled {
+  opacity: 0.45;
+  cursor: default;
 }

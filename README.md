@@ -13,7 +13,7 @@ Netlify Blobs (or .local-blobs/ in dev)   ← live content — current.json + hi
         │      app/admin/  (Puck editor, Google-OAuth gated)
         ▼
 app/page.tsx                 ← loads content via src/lib/portfolioContent.ts
-src/components/*.tsx          ← Hero, TabbedContent, BlockRenderer, JobCard, ...
+src/components/*.tsx          ← Hero, TabbedContent, BlockRenderer, Container, ...
         │
         ▼
    rendered per-request (Next.js server rendering on Netlify)
@@ -21,9 +21,12 @@ src/components/*.tsx          ← Hero, TabbedContent, BlockRenderer, JobCard, .
 content/portfolio.json    ← seed value only, read the first time nothing has been saved yet
 ```
 
-- Page content is a `PortfolioData` document — per-tab arrays of typed
-  blocks (`job`, `placeholder`, `education`, `certificate-group`,
-  `gallery-item`, `note`) — see `src/types.ts`. It lives in a Netlify Blobs
+- Page content is a `PortfolioData` document — an ordered array of tabs,
+  each holding a tree of generic blocks (`container`, `heading`, `text`,
+  `dates`, `bullets`, `badge`, `image`, `video`), where `container` nests
+  other blocks and carries its own layout options — see `src/types.ts`. A
+  stored document written before this model existed is upgraded on read by
+  `src/lib/contentMigration.ts`. It lives in a Netlify Blobs
   store (`src/lib/blobStore.ts` / `src/lib/portfolioContent.ts`), not in a
   git-tracked file. `content/portfolio.json` only seeds that store the first
   time it's ever read with nothing saved yet.
@@ -152,10 +155,14 @@ npm run lint:fix     # apply safe fixes + formatting
 ├── middleware.ts             Redirects unauthenticated /admin, /api/puck requests
 ├── puck.config.tsx           Maps this app's components to Puck-editable fields
 ├── src/
-│   ├── components/            Hero, TabbedContent, BlockRenderer, JobCard, PuckAdmin, ...
+│   ├── components/            Hero, TabbedContent, BlockRenderer, Container, PuckAdmin, ...
 │   ├── lib/
 │   │   ├── blobStore.ts          Netlify Blobs / local-file store abstraction
 │   │   ├── portfolioContent.ts    getPortfolioContent() / savePortfolioContent()
+│   │   ├── contentMigration.ts    Upgrades a stored pre-generic document, on every read
+│   │   ├── sanitizeBlocks.ts      Strips rich-text HTML to an allow-list at save time
+│   │   ├── layoutOptions.ts       The allowed container layout values — one source of truth
+│   │   ├── tabSlugs.ts            Derives readable DOM ids from tab labels
 │   │   ├── allowedEmails.ts       Email allow-list check (ALLOWED_EMAILS)
 │   │   └── puckAdapter.ts         Block[] <-> Puck data format conversion
 │   ├── styles/

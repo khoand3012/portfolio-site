@@ -35,8 +35,8 @@ async function handleRequest(request: Request) {
       context: AI_CONTEXT,
       // Locks Puck AI to composing from this app's own config components —
       // "design" mode can invent new custom-styled sections, which would
-      // both risk drifting off the fixed navy/graphite/mint design tokens
-      // and bypass the per-field ai.instructions guardrails in puck.config.tsx.
+      // both risk drifting off the fixed --sand-* design tokens and bypass
+      // the per-field ai.instructions guardrails in puck.config.tsx.
       mode: 'assembly',
     },
   });

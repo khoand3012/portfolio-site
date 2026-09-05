@@ -1,0 +1,187 @@
+{
+  "hero": {
+    "name": "Truong Nam Nguyen",
+    "initials": "TNN",
+    "role": "Programme Coordinator, Education @ British Council Vietnam",
+    "phone": "+84 90 832 9797",
+    "email": "truongnam307@gmail.com",
+    "linkedin": "linkedin.com/in/truong-nam-nguyen-b82886138",
+    "location": "Hanoi, Vietnam",
+    "profile": "Professional with 5+ years of experience in international education, project coordination, and administrative operations within UK higher education and international organisations. Proven capacity to support funded education programmes, manage multi-stakeholder coordination, ensure procedural compliance, and deliver high-quality administrative and financial support in complex, regulated environments."
+  },
+  "tabs": {
+    "teaching": {
+      "label": "Teaching",
+      "blocks": [
+        {
+          "type": "job",
+          "company": "AMES English — Hanoi",
+          "dates": "2019 – 2021",
+          "role": "English Teacher (Examination Preparation)",
+          "bullets": [
+            "Delivered IELTS preparation programmes to diverse learner groups, supporting over 500 students in achieving academic language proficiency targets.",
+            "Developed structured learning plans, assessment strategies, and progress reports aligned with international examination standards."
+          ]
+        },
+        {
+          "type": "placeholder",
+          "company": "Hanoi Metropolitan University",
+          "note": "Add role, dates, and responsibilities here."
+        },
+        {
+          "type": "placeholder",
+          "company": "Alpaca Edu Co. LTD",
+          "note": "Add role, dates, and responsibilities here."
+        }
+      ]
+    },
+    "internationalEducation": {
+      "label": "International Education",
+      "blocks": [
+        {
+          "type": "job",
+          "company": "University of Huddersfield (UK) — International Office",
+          "dates": "2022 – 2025",
+          "role": "International Administrator",
+          "bullets": [
+            "Coordinated international education programmes including inbound/outbound student mobility and funded exchange schemes (e.g. UK Turing Scheme 2023–2024, International Summer Camp).",
+            "Liaised with partner universities, academic faculties, and external stakeholders to plan, implement, and monitor programme activities.",
+            "Supported budget planning and financial monitoring for mobility programmes, ensuring alignment with approved funding frameworks.",
+            "Provided comprehensive administrative support for international students and senior academic management, including official correspondence, documentation, and database management.",
+            "Maintained and updated partner and recruitment databases via CRM systems (ASIS), ensuring data accuracy and compliance.",
+            "Supported the organisation of international events, orientations, academic workshops, and official visits."
+          ]
+        },
+        {
+          "type": "job",
+          "company": "British Council Vietnam LLC",
+          "dates": "2025 – Present",
+          "role": "Exams Operation Officer",
+          "bullets": [
+            "Coordinate the delivery of high-stakes international examinations (IELTS, APTIS ESOL, Cambridge AS/A Level) across 10+ test centres nationwide.",
+            "Provide administrative and operational oversight for examination cycles, including logistics planning, documentation, reporting, and audit preparation.",
+            "Supervise and support 200+ venue staff and test-day supervisors, contributing to standardised procedures and service quality assurance.",
+            "Contribute to internal audits, compliance reviews, and process improvement initiatives."
+          ]
+        }
+      ]
+    },
+    "testing": {
+      "label": "English Language Testing and Exams",
+      "blocks": [
+        {
+          "type": "certificate-group",
+          "heading": "Certificates",
+          "certificates": [
+            {
+              "text": "IELTS Academic — Overall 8.0 (2025)",
+              "accent": true
+            },
+            {
+              "text": "Chinese Proficiency Test — HSK Level 3 (2018)",
+              "accent": false
+            }
+          ]
+        },
+        {
+          "type": "job",
+          "company": "Exams Operation Officer — British Council Vietnam",
+          "dates": "2025 – Present",
+          "role": "",
+          "bullets": [
+            "Coordinate delivery of high-stakes international examinations (IELTS, APTIS ESOL, Cambridge AS/A Level) across 10+ test centres nationwide, ensuring strict compliance with global security and operational standards.",
+            "Manage risk assessment and incident response, ensuring exam integrity, candidate safety, and institutional reputation.",
+            "Contribute to internal audits, compliance reviews, and process improvement initiatives strengthening operational efficiency and governance."
+          ]
+        },
+        {
+          "type": "note",
+          "text": "Add further testing/exam-specific achievements, statistics, or accreditations here."
+        }
+      ]
+    },
+    "academicBackground": {
+      "label": "Academic Background",
+      "blocks": [
+        {
+          "type": "education",
+          "school": "University of Huddersfield — United Kingdom",
+          "dates": "2021 – 2022",
+          "degree": "Master of Arts in Education (Technology Enhanced Learning)",
+          "bullets": [
+            "Final grade: Passed with Distinction. Awarded University Scholarship for South-East Asia Excellence."
+          ],
+          "dissertation": "Mobile Learning Practices in Vietnamese Higher Education Institutions"
+        },
+        {
+          "type": "education",
+          "school": "University of Languages and International Studies — VNU, Vietnam",
+          "dates": "2015 – 2019",
+          "degree": "Bachelor of Arts in TESOL (Minor: Simplified Chinese)",
+          "bullets": ["Graduated with Distinction (GPA: 3.5/4.0)."],
+          "dissertation": ""
+        }
+      ]
+    },
+    "publications": {
+      "label": "Publications",
+      "blocks": [
+        {
+          "type": "note",
+          "text": "No publications added yet — add articles, papers, or dissertations here (e.g. your MA dissertation \"Mobile Learning Practices in Vietnamese Higher Education Institutions\")."
+        }
+      ]
+    },
+    "talks": {
+      "label": "Talks/Workshops/Seminars",
+      "blocks": [
+        {
+          "type": "note",
+          "text": "No talks, workshops, or seminars added yet — add speaking engagements, facilitated workshops, or seminars here."
+        }
+      ]
+    },
+    "media": {
+      "label": "Photos and Videos",
+      "blocks": [
+        {
+          "type": "gallery-item",
+          "itemType": "photo",
+          "image": "",
+          "videoUrl": ""
+        },
+        {
+          "type": "gallery-item",
+          "itemType": "photo",
+          "image": "",
+          "videoUrl": ""
+        },
+        {
+          "type": "gallery-item",
+          "itemType": "video",
+          "image": "",
+          "videoUrl": ""
+        },
+        {
+          "type": "gallery-item",
+          "itemType": "photo",
+          "image": "",
+          "videoUrl": ""
+        },
+        {
+          "type": "gallery-item",
+          "itemType": "video",
+          "image": "",
+          "videoUrl": ""
+        },
+        {
+          "type": "gallery-item",
+          "itemType": "photo",
+          "image": "",
+          "videoUrl": ""
+        }
+      ]
+    }
+  },
+  "footer": "Truong Nam Nguyen · Hanoi, Vietnam · truongnam307@gmail.com"
+}

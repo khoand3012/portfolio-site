@@ -1,6 +1,7 @@
 import seedData from '../../content/portfolio.json';
 import type { PortfolioData } from '../types';
 import { getContentStore } from './blobStore';
+import { migratePortfolioData } from './contentMigration';
 
 const STORE_NAME = 'portfolio';
 const CURRENT_KEY = 'current.json';
@@ -20,8 +21,13 @@ function historyKey(): string {
 // NOT safe to use as the read half of a write.
 export async function readPortfolioContentStrict(): Promise<PortfolioData> {
   const store = getContentStore(STORE_NAME);
-  const current = (await store.get(CURRENT_KEY)) as PortfolioData | null;
-  return current ?? (seedData as PortfolioData);
+  const current = await store.get(CURRENT_KEY);
+  // Migrate on read rather than as a one-off script: production content lives
+  // in Netlify Blobs with no convenient script access, and this covers every
+  // history/ snapshot for free. migratePortfolioData is deterministic, so the
+  // same stored bytes always yield the same tab ids — load-bearing for
+  // saveTabBlocksAction's id lookup.
+  return migratePortfolioData(current ?? seedData);
 }
 
 // Same strict read as above, plus the etag it was read at — the write half
@@ -35,10 +41,10 @@ export async function readPortfolioContentWithEtag(): Promise<{
 }> {
   const store = getContentStore(STORE_NAME);
   const [current, etag] = await Promise.all([
-    store.get(CURRENT_KEY) as Promise<PortfolioData | null>,
+    store.get(CURRENT_KEY),
     store.getEtag(CURRENT_KEY),
   ]);
-  return { data: current ?? (seedData as PortfolioData), etag };
+  return { data: migratePortfolioData(current ?? seedData), etag };
 }
 
 export async function getPortfolioContent(): Promise<PortfolioData> {
@@ -51,7 +57,7 @@ export async function getPortfolioContent(): Promise<PortfolioData> {
       'Failed to read portfolio content from the content store, falling back to seed data:',
       error,
     );
-    return seedData as PortfolioData;
+    return migratePortfolioData(seedData);
   }
 }
 

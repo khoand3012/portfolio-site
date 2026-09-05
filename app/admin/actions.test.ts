@@ -13,34 +13,36 @@ import {
   readPortfolioContentWithEtag,
   savePortfolioContent,
 } from '../../src/lib/portfolioContent';
-import { saveTabBlocksAction } from './actions';
+import { saveHeroAction, saveTabBlocksAction, saveTabsAction } from './actions';
 
 const ALLOWED_EMAIL = 'owner@example.com';
 
-function emptyTab(label: string) {
-  return { label, blocks: [] };
-}
-
 function fixtureContent(): PortfolioData {
   return {
-    hero: {
-      name: 'Test',
-      initials: 'T',
-      role: 'Role',
-      profile: 'Profile',
-    },
-    tabs: {
-      teaching: emptyTab('Teaching'),
-      internationalEducation: emptyTab('International Education'),
-      testing: emptyTab('Testing'),
-      academicBackground: emptyTab('Academic Background'),
-      publications: emptyTab('Publications'),
-      talks: emptyTab('Talks'),
-      media: emptyTab('Media'),
-    },
+    version: 2,
+    hero: { name: 'Test', initials: 'T', role: 'Role', profile: 'Profile' },
+    tabs: [
+      { id: 'teaching', label: 'Teaching', blocks: [] },
+      { id: 'media', label: 'Media', blocks: [] },
+    ],
     footer: 'Footer',
   };
 }
+
+const container = (over: Record<string, unknown> = {}) => ({
+  type: 'container',
+  children: [],
+  direction: 'stack',
+  gap: 'md',
+  padding: 'none',
+  marginBottom: 'none',
+  align: 'stretch',
+  justify: 'start',
+  columns: 'auto',
+  wrap: false,
+  surface: 'none',
+  ...over,
+});
 
 describe('saveTabBlocksAction', () => {
   beforeEach(() => {
@@ -66,97 +68,74 @@ describe('saveTabBlocksAction', () => {
     );
   });
 
-  it('rejects an unknown tab key', async () => {
+  it('rejects a tree nested past the depth cap', async () => {
+    let deep = container();
+    for (let i = 0; i < 8; i += 1) deep = container({ children: [deep] });
     await expect(
-      // biome-ignore lint/suspicious/noExplicitAny: deliberately passing an invalid tab key to test the guard.
-      saveTabBlocksAction('bogus-tab' as any, []),
-    ).rejects.toThrow('unknown tab key');
+      saveTabBlocksAction('teaching', [deep] as never),
+    ).rejects.toThrow(/nests deeper/);
   });
 
-  it('saves valid blocks for every block type', async () => {
+  it('rejects a tree over the node cap', async () => {
+    const many = Array.from({ length: 2001 }, () => container());
+    await expect(
+      saveTabBlocksAction('teaching', many as never),
+    ).rejects.toThrow(/more than 2000/);
+  });
+
+  it('rejects a rich-text value over the length cap', async () => {
+    await expect(
+      saveTabBlocksAction('teaching', [
+        { type: 'text', html: 'x'.repeat(20_001), variant: 'body' },
+      ] as never),
+    ).rejects.toThrow(/exceeds 20000/);
+  });
+
+  it('rejects a layout value outside the allow-list', async () => {
+    await expect(
+      saveTabBlocksAction('teaching', [
+        container({ direction: 'flex' }),
+      ] as never),
+    ).rejects.toThrow(/unknown direction/);
+  });
+
+  it('rejects an unknown video mode', async () => {
+    await expect(
+      saveTabBlocksAction('teaching', [
+        { type: 'video', mode: 'autoplay' },
+      ] as never),
+    ).rejects.toThrow(/unknown mode/);
+  });
+
+  it('rejects a tab id that no longer exists, distinctly from a conflict', async () => {
+    await expect(saveTabBlocksAction('deleted-tab', [])).rejects.toThrow(
+      /no longer exists/,
+    );
+  });
+
+  it('strips disallowed markup instead of failing the save', async () => {
     await saveTabBlocksAction('teaching', [
-      { type: 'job', company: 'Acme', dates: '2020', bullets: ['Did a thing'] },
-      { type: 'placeholder', company: 'Acme', note: 'Coming soon' },
       {
-        type: 'education',
-        school: 'State U',
-        dates: '2020',
-        degree: 'BSc',
-        bullets: ['Studied things'],
+        type: 'text',
+        html: '<p>ok<script>bad()</script></p>',
+        variant: 'body',
       },
-      {
-        type: 'certificate-group',
-        heading: 'Certs',
-        certificates: [{ text: 'PMP', accent: true }],
-      },
-      { type: 'gallery-item', itemType: 'photo', image: 'https://x/y.png' },
-      { type: 'note', text: 'A note' },
-    ]);
-    expect(savePortfolioContent).toHaveBeenCalledWith(expect.anything(), {
-      ifMatch: 'etag-1',
-    });
+    ] as never);
+    const saved = vi.mocked(savePortfolioContent).mock
+      .calls[0]?.[0] as PortfolioData;
+    expect(JSON.stringify(saved)).not.toContain('script');
+    expect(JSON.stringify(saved)).toContain('ok');
   });
 
-  it('rejects a job block whose bullets is not an array', async () => {
+  it('accepts a valid nested tree', async () => {
     await expect(
       saveTabBlocksAction('teaching', [
-        // biome-ignore lint/suspicious/noExplicitAny: deliberately malformed to test the shape guard.
-        { type: 'job', company: 'Acme', dates: '2020', bullets: 'oops' } as any,
-      ]),
-    ).rejects.toThrow('non-string-array bullets');
-  });
-
-  it('rejects an education block whose dissertation is not a string', async () => {
-    await expect(
-      saveTabBlocksAction('teaching', [
-        {
-          type: 'education',
-          school: 'State U',
-          dates: '2020',
-          degree: 'BSc',
-          dissertation: 123,
-          // biome-ignore lint/suspicious/noExplicitAny: deliberately malformed to test the shape guard.
-        } as any,
-      ]),
-    ).rejects.toThrow('non-string dissertation');
-  });
-
-  it('rejects a certificate-group item missing text', async () => {
-    await expect(
-      saveTabBlocksAction('teaching', [
-        {
-          type: 'certificate-group',
-          heading: 'Certs',
-          certificates: [{ accent: true }],
-          // biome-ignore lint/suspicious/noExplicitAny: deliberately malformed to test the shape guard.
-        } as any,
-      ]),
-    ).rejects.toThrow('certificates[0] missing text');
-  });
-
-  it('rejects a certificate-group item that is not an object', async () => {
-    await expect(
-      saveTabBlocksAction('teaching', [
-        {
-          type: 'certificate-group',
-          heading: 'Certs',
-          certificates: ['PMP'],
-          // biome-ignore lint/suspicious/noExplicitAny: deliberately malformed to test the shape guard.
-        } as any,
-      ]),
-    ).rejects.toThrow('certificates[0] is not an object');
-  });
-
-  it('rejects a gallery-item block whose image is not a string', async () => {
-    await expect(
-      saveTabBlocksAction('teaching', [
-        {
-          type: 'gallery-item',
-          itemType: 'photo',
-          image: 42,
-        } as unknown as never,
-      ]),
-    ).rejects.toThrow('non-string image');
+        container({
+          surface: 'card',
+          children: [{ type: 'heading', text: 'Acme', level: 'h3' }],
+        }),
+      ] as never),
+    ).resolves.toBeUndefined();
   });
 
   it('surfaces a clear conflict message when the store detects a concurrent save', async () => {
@@ -175,5 +154,259 @@ describe('saveTabBlocksAction', () => {
     await expect(saveTabBlocksAction('teaching', [])).rejects.toThrow(
       'store is down',
     );
+  });
+});
+
+describe('saveTabsAction', () => {
+  beforeEach(() => {
+    // Call counts accumulate across the file otherwise, and several of
+    // these tests assert the store was never touched.
+    vi.clearAllMocks();
+    vi.mocked(auth).mockResolvedValue({
+      user: { email: ALLOWED_EMAIL },
+      expires: '',
+    } as never);
+    process.env.ALLOWED_EMAILS = ALLOWED_EMAIL;
+    vi.mocked(readPortfolioContentWithEtag).mockResolvedValue({
+      data: withBlocks(),
+      etag: 'etag-1',
+    });
+    vi.mocked(savePortfolioContent).mockResolvedValue(undefined);
+  });
+
+  // A tab whose blocks must survive a rename or reorder — the whole risk of
+  // an action that rewrites the tab list is that it drops the content
+  // hanging off it.
+  function withBlocks(): PortfolioData {
+    const data = fixtureContent();
+    return {
+      ...data,
+      tabs: data.tabs.map((tab, i) =>
+        i === 0
+          ? {
+              ...tab,
+              blocks: [{ type: 'heading', text: 'Kept', level: 'h3' }],
+            }
+          : tab,
+      ),
+    };
+  }
+
+  function savedDoc(): PortfolioData {
+    return vi.mocked(savePortfolioContent).mock.calls[0]?.[0] as PortfolioData;
+  }
+
+  it('rejects a session email not on the allow-list', async () => {
+    vi.mocked(auth).mockResolvedValue({
+      user: { email: 'stranger@example.com' },
+      expires: '',
+    } as never);
+    await expect(
+      saveTabsAction([{ id: 'teaching', label: 'T' }]),
+    ).rejects.toThrow('Not authorized.');
+    expect(readPortfolioContentWithEtag).not.toHaveBeenCalled();
+    expect(savePortfolioContent).not.toHaveBeenCalled();
+  });
+
+  it('renames a tab without touching its blocks', async () => {
+    await saveTabsAction([
+      { id: 'teaching', label: 'Teaching & Training' },
+      { id: 'media', label: 'Media' },
+    ]);
+    const tabs = savedDoc().tabs;
+    expect(tabs[0]?.label).toBe('Teaching & Training');
+    expect(tabs[0]?.blocks).toEqual([
+      { type: 'heading', text: 'Kept', level: 'h3' },
+    ]);
+  });
+
+  it('reorders tabs, carrying their blocks with them', async () => {
+    await saveTabsAction([
+      { id: 'media', label: 'Media' },
+      { id: 'teaching', label: 'Teaching' },
+    ]);
+    const tabs = savedDoc().tabs;
+    expect(tabs.map((t) => t.id)).toEqual(['media', 'teaching']);
+    expect(tabs[1]?.blocks).toHaveLength(1);
+  });
+
+  it('adds a tab with an empty block list for an unknown id', async () => {
+    await saveTabsAction([
+      { id: 'teaching', label: 'Teaching' },
+      { id: 'media', label: 'Media' },
+      { id: 'brand-new-uuid', label: 'Awards' },
+    ]);
+    const tabs = savedDoc().tabs;
+    expect(tabs).toHaveLength(3);
+    expect(tabs[2]).toEqual({
+      id: 'brand-new-uuid',
+      label: 'Awards',
+      blocks: [],
+    });
+  });
+
+  it('deletes a tab omitted from the list, blocks and all', async () => {
+    await saveTabsAction([{ id: 'media', label: 'Media' }]);
+    const tabs = savedDoc().tabs;
+    expect(tabs.map((t) => t.id)).toEqual(['media']);
+  });
+
+  it('leaves hero and footer untouched', async () => {
+    await saveTabsAction([{ id: 'media', label: 'Media' }]);
+    const doc = savedDoc();
+    expect(doc.hero).toEqual(fixtureContent().hero);
+    expect(doc.footer).toBe('Footer');
+    expect(doc.version).toBe(2);
+  });
+
+  it('rejects duplicate ids', async () => {
+    await expect(
+      saveTabsAction([
+        { id: 'teaching', label: 'One' },
+        { id: 'teaching', label: 'Two' },
+      ]),
+    ).rejects.toThrow(/duplicate/i);
+    expect(savePortfolioContent).not.toHaveBeenCalled();
+  });
+
+  it('rejects an empty or whitespace-only label', async () => {
+    await expect(
+      saveTabsAction([{ id: 'teaching', label: '   ' }]),
+    ).rejects.toThrow(/label/i);
+    expect(savePortfolioContent).not.toHaveBeenCalled();
+  });
+
+  it('rejects more tabs than the cap allows', async () => {
+    const many = Array.from({ length: 21 }, (_, i) => ({
+      id: `t${i}`,
+      label: `Tab ${i}`,
+    }));
+    await expect(saveTabsAction(many)).rejects.toThrow(/20/);
+    expect(savePortfolioContent).not.toHaveBeenCalled();
+  });
+
+  it('rejects a non-array payload', async () => {
+    await expect(saveTabsAction('nope' as never)).rejects.toThrow(
+      /not an array/i,
+    );
+  });
+
+  it('surfaces a clear conflict message when the store detects a concurrent save', async () => {
+    vi.mocked(savePortfolioContent).mockRejectedValue(
+      new SaveConflictError('stale etag'),
+    );
+    await expect(
+      saveTabsAction([{ id: 'teaching', label: 'Teaching' }]),
+    ).rejects.toThrow(/Someone else saved changes/);
+  });
+
+  it('writes with the etag it read, so a concurrent save is detected', async () => {
+    await saveTabsAction([{ id: 'teaching', label: 'Teaching' }]);
+    expect(savePortfolioContent).toHaveBeenCalledWith(expect.anything(), {
+      ifMatch: 'etag-1',
+    });
+  });
+});
+
+describe('saveHeroAction', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(auth).mockResolvedValue({
+      user: { email: ALLOWED_EMAIL },
+      expires: '',
+    } as never);
+    process.env.ALLOWED_EMAILS = ALLOWED_EMAIL;
+    vi.mocked(readPortfolioContentWithEtag).mockResolvedValue({
+      data: fixtureContent(),
+      etag: 'etag-1',
+    });
+    vi.mocked(savePortfolioContent).mockResolvedValue(undefined);
+  });
+
+  function savedDoc(): PortfolioData {
+    return vi.mocked(savePortfolioContent).mock.calls[0]?.[0] as PortfolioData;
+  }
+
+  const validHero = {
+    name: 'Test',
+    initials: 'T',
+    role: 'Role',
+    profile: 'Profile',
+  };
+
+  it('rejects a session email not on the allow-list', async () => {
+    vi.mocked(auth).mockResolvedValue({
+      user: { email: 'stranger@example.com' },
+      expires: '',
+    } as never);
+    await expect(saveHeroAction(validHero)).rejects.toThrow('Not authorized.');
+    expect(savePortfolioContent).not.toHaveBeenCalled();
+  });
+
+  it('rejects a missing required field', async () => {
+    await expect(
+      saveHeroAction({ ...validHero, name: '' } as never),
+    ).rejects.toThrow(/name/i);
+    expect(savePortfolioContent).not.toHaveBeenCalled();
+  });
+
+  it('rejects a non-string optional field', async () => {
+    await expect(
+      saveHeroAction({ ...validHero, dob: 42 } as never),
+    ).rejects.toThrow(/dob/i);
+    expect(savePortfolioContent).not.toHaveBeenCalled();
+  });
+
+  it('accepts a hero with every optional field present, including dob and credential', async () => {
+    await expect(
+      saveHeroAction({
+        ...validHero,
+        phone: '+1 555',
+        email: 'a@b.com',
+        linkedin: 'linkedin.com/in/x',
+        location: 'Hanoi',
+        dob: '1 Jan 1995',
+        credential: 'PRINCE2 Practitioner',
+      }),
+    ).resolves.toBeUndefined();
+    expect(savedDoc().hero).toMatchObject({
+      dob: '1 Jan 1995',
+      credential: 'PRINCE2 Practitioner',
+    });
+  });
+
+  it('accepts a hero with every optional field absent', async () => {
+    await expect(saveHeroAction(validHero)).resolves.toBeUndefined();
+  });
+
+  it('leaves tabs and footer untouched', async () => {
+    await saveHeroAction(validHero);
+    const doc = savedDoc();
+    expect(doc.tabs).toEqual(fixtureContent().tabs);
+    expect(doc.footer).toBe('Footer');
+    expect(doc.version).toBe(2);
+  });
+
+  it('writes with the etag it read, so a concurrent save is detected', async () => {
+    await saveHeroAction(validHero);
+    expect(savePortfolioContent).toHaveBeenCalledWith(expect.anything(), {
+      ifMatch: 'etag-1',
+    });
+  });
+
+  it('surfaces a clear conflict message when the store detects a concurrent save', async () => {
+    vi.mocked(savePortfolioContent).mockRejectedValue(
+      new SaveConflictError('stale etag'),
+    );
+    await expect(saveHeroAction(validHero)).rejects.toThrow(
+      /Someone else saved changes/,
+    );
+  });
+
+  it('propagates a non-conflict save error unchanged', async () => {
+    vi.mocked(savePortfolioContent).mockRejectedValue(
+      new Error('store is down'),
+    );
+    await expect(saveHeroAction(validHero)).rejects.toThrow('store is down');
   });
 });

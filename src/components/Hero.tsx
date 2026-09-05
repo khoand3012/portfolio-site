@@ -24,6 +24,7 @@ export function Hero({ hero }: Props) {
           <div className="hero-heading">
             <h1>{hero.name}</h1>
             <p className="role">{hero.role}</p>
+            {hero.credential && <p className="credential">{hero.credential}</p>}
           </div>
           <div className="avatar" aria-hidden="true">
             {hero.initials}
@@ -34,6 +35,7 @@ export function Hero({ hero }: Props) {
           <MetaItem icon="mail" text={hero.email} href={emailHref} />
           <MetaItem icon="linkedin" text={hero.linkedin} href={linkedinHref} />
           <MetaItem icon="pin" text={hero.location} href={locationHref} />
+          <MetaItem icon="calendar" text={hero.dob} />
         </div>
         <p className="profile">{hero.profile}</p>
       </div>

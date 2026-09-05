@@ -54,6 +54,12 @@ reliable signal.)
   stylesheet, not per-component scoped styles. Keep it that way;
   splitting styles across components is where visual regressions creep in
   for a page this size.
+- Surface and leaf block CSS classes (`.text-*`, `.bullet-list`, `.tag`,
+  `.media-*`, etc.) carry no outer spacing or padding of their own — the
+  `container` block owns all of it via its `layout-p-*`/`layout-gap-*`/
+  `layout-mb-*` classes (see `Container.tsx`). Adding margin or padding to a
+  leaf component's own class double-spaces it against the container that
+  wraps it; if spacing looks off, fix the container's layout props instead.
 
 After any change, run `npm run check` (`tsc --noEmit`), `npm run test`, and
 `npm run build` before committing.
@@ -73,22 +79,58 @@ around the initial redesign for the reasoning.
 ## Keep `src/types.ts` in sync with `content/portfolio.json`
 
 `src/types.ts`'s `PortfolioData`/`Block` types are a hand-maintained copy of
-`content/portfolio.json`'s shape (a discriminated union over `job`,
-`placeholder`, `education`, `certificate-group`, `gallery-item`, `note` — a
-real, deliberate schema, not a naming detail). If you add/rename/remove a
-field, update `types.ts` and the corresponding component in
-`src/components/` in the same change — `npm run check` (`tsc --noEmit`)
-will not catch a JSON field that no longer matches the type unless the type
-itself is updated too.
+`content/portfolio.json`'s shape. The six hard-coded variants this section
+used to describe (`job`, `placeholder`, `education`, `certificate-group`,
+`gallery-item`, `note`) are gone. The content model is now generic: a
+`Block` is a discriminated union over eight variants — `container`,
+`heading`, `text`, `dates`, `bullets`, `badge`, `image`, `video` —
+and every one of the old CV-specific layouts (a job entry, a certificate
+row, a gallery card) is now just a `container` composed from these
+primitives. `container` is the recursive case: its `children` field is
+itself `Block[]`, so containers nest arbitrarily deep. If you add, rename,
+or remove a field on any variant, update `types.ts` and the corresponding
+component in `src/components/` in the same change — `npm run check`
+(`tsc --noEmit`) will not catch a JSON field that no longer matches the
+type unless the type itself is updated too.
 
-This type now has more downstream consumers than just the JSON import,
-since content also flows through the admin panel: `app/admin/actions.ts`'s
-`assertBlocksShape` runtime-validates incoming blocks against this same
-shape before a save is allowed to reach the content store, and
-`puck.config.tsx` / `src/lib/puckAdapter.ts` map each `Block` variant to and
-from Puck's editor data format. A `Block` field change that isn't reflected
-in all of these can pass `tsc` while still breaking a save at runtime or
-silently dropping a field in the Puck editor — update them together.
+`ContainerBlock`'s layout fields (`direction`, `gap`, `padding`,
+`marginBottom`, `align`, `justify`, `columns`, `wrap`, `surface`) are
+constrained string unions, and `src/lib/layoutOptions.ts` is the single
+source of truth for their allowed values — three consumers read from it and
+none may keep its own copy: `puck.config.tsx`'s `select` field `options`,
+`app/admin/actions.ts`'s `assertBlocksShape` allow-list checks, and
+`Container.tsx`'s className mapping. Add a layout value there, not in any
+of the three consumers, or the dropdown, the save-time validator, and the
+rendered class name will drift apart.
+
+Two fields hold sanitized HTML rather than plain text: `TextBlock.html` and
+`BulletsBlock.items`. Puck's richtext field is Tiptap-backed and stores
+`editor.getHTML()`, and `Text.tsx`/`Bullets.tsx` render that with
+`dangerouslySetInnerHTML` — so `src/lib/sanitizeBlocks.ts` runs at the save
+boundary in `app/admin/actions.ts` to strip anything outside a small
+allow-list (`p`, `br`, `strong`, `em`, `u`, `a`) before it can reach the
+content store. Every other `Block` field (`heading.text`, `dates.text`,
+`badge.text`, …) is plain text, rendered as text, never as markup.
+
+This type has more downstream consumers than just the JSON import, since
+content also flows through the admin panel: `assertBlocksShape` (above)
+runtime-validates incoming blocks against this same shape before a save
+reaches the content store, and `puck.config.tsx` / `src/lib/puckAdapter.ts`
+map each `Block` variant to and from Puck's editor data format. A `Block`
+field change that isn't reflected in all of these can pass `tsc` while
+still breaking a save at runtime or silently dropping a field in the Puck
+editor — update them together.
+
+`src/lib/contentMigration.ts`'s `migratePortfolioData` upgrades a stored v1
+document (the old six-variant shape) to this v2 generic model, and it runs
+on **every read** of a still-v1 document (see `portfolioContent.ts`), not
+as a one-off script — production content lives in Netlify Blobs with no
+convenient script access, and running it on read covers every `history/`
+snapshot for free. It must stay deterministic: no `randomUUID()` inside
+it. `saveTabBlocksAction` looks a tab up by id inside its own
+read-modify-write, and a migrated tab keeps its v1 object key verbatim as
+its id — an invented random id per read would make that lookup miss and
+fail every save against an unmigrated document.
 
 ## The admin panel at `/admin` is real, deliberate, and current — do not remove it
 
@@ -122,9 +164,11 @@ the others could be bypassed, so don't "simplify" this down to fewer checks:
    `/api/puck` before anything renders.
 3. `app/admin/page.tsx` — re-checks the session and allow-list server-side
    before rendering any content, as defense in depth beyond middleware.
-4. `app/admin/actions.ts`'s `saveTabBlocksAction` — re-checks auth again
-   before writing, because server actions can be invoked directly and can't
-   rely on the page having already gated access.
+4. `app/admin/actions.ts`'s `saveTabBlocksAction` and `saveTabsAction` —
+   each re-checks auth again before writing, because server actions can be
+   invoked directly and can't rely on the page having already gated access.
+   A new action added here needs its own check; there is no shared wrapper
+   doing it for you.
 5. `app/api/puck/[...all]/route.ts`'s request handler — re-checks auth
    again before calling `puckHandler`, for a rationale distinct from the
    others: this route spends the Puck Cloud account's metered AI credit on
@@ -132,11 +176,43 @@ the others could be bypassed, so don't "simplify" this down to fewer checks:
    needs to be blocked before it reaches Puck's API, not just before it
    can write anything.
 
-**The editor:** `puck.config.tsx` (repo root) maps this app's existing
-components (`JobCard`, `EducationCard`, etc.) to Puck-editable fields;
-`src/lib/puckAdapter.ts` converts between this app's `Block[]` content model
-and Puck's own data format; `src/components/PuckAdmin.tsx` renders one Puck
-instance per tab.
+**The editor:** `puck.config.tsx` (repo root) maps this app's generic block
+components (`Heading`, `Text`, `Bullets`, `Badge`, etc., plus `Container`
+and its scaffolding presets `EntryCard`/`BadgeRow`/`MediaGrid`) to
+Puck-editable fields; `src/lib/puckAdapter.ts` converts between this app's
+`Block[]` content model and Puck's own data format;
+`src/components/PuckAdmin.tsx` renders one Puck instance per tab.
+
+**Tab management.** The tab list is content, not code: `src/components/
+TabManager.tsx` (reachable from the "Manage tabs" button beside the content
+tabs in `/admin`) edits the whole list and publishes it through
+`saveTabsAction`, which reconciles it against the freshly-read document in
+one etag-protected write — a matching id keeps that tab's blocks through a
+rename or reorder, an unknown id creates an empty tab, an omitted tab is
+deleted with its content. Two consequences worth knowing before touching
+this: `saveTabBlocksAction` looks its tab up by id in the document it just
+read (not against a static list), so it correctly refuses a save aimed at a
+tab the manager deleted while an editor was still open; and deleting a tab
+really does discard its blocks, with the timestamped `history/` snapshot as
+the only recovery path — which is why the remove button arms on the first
+click and commits on the second.
+
+**Hero editing.** Hero doesn't go through Puck: it's a single fixed-shape
+record with nothing to add, remove, or reorder, so forcing it into Puck's
+block-list model would mean a config with exactly one permanently-present
+block instance. Instead `src/components/HeroForm.tsx` (reachable from the
+"Edit hero" button beside "Manage tabs") is a plain controlled form over
+every `Hero` field, saved through `saveHeroAction` — same
+auth-check/etag-protected-write/`SaveConflictError`-to-plain-message shape as
+`saveTabBlocksAction` and `saveTabsAction`, because Hero and every tab live
+in one `PortfolioData` document and a concurrent Hero save races a tab save
+the same way two tab saves do. `Hero.dob` renders as another `MetaItem` (a
+new `'calendar'` icon) and `Hero.credential` as a `<p className="credential">`
+under `.role`; both are optional and plain text, never markup. Per this
+file's content-fidelity rule, the capability only: `content/portfolio.json`
+carries no `dob` or `credential` value, because those are the site owner's
+own facts to enter through `/admin`, not something to invent as a
+placeholder.
 
 **Puck AI** (a chat panel for scaffolding/rearranging content) is wired via
 `@puckeditor/plugin-ai`/`@puckeditor/cloud-client`, and needs the site
@@ -158,9 +234,9 @@ definitions, not just its docs:
 1. `ai.context` in `app/api/puck/[...all]/route.ts` — a handler-level system
    prompt instructing the AI to only scaffold or rearrange, never rewrite
    existing real content.
-2. Per-field `ai.instructions` in `puck.config.tsx` — six specific
-   fields/components carry instructions like "never rewrite an existing
-   bullet's text".
+2. Per-field `ai.instructions` in `puck.config.tsx` — four fields, one
+   each on the `Bullets`, `Heading`, `Text`, and `Badge` components, carry
+   instructions like "never rewrite an existing bullet's text".
 3. `ai.mode: 'assembly'`, also set in `app/api/puck/[...all]/route.ts` — a
    genuine config-level constraint (confirmed as a real typed SDK option,
    not just a documented convention) that locks Puck AI to composing from
@@ -205,9 +281,17 @@ now.)
 
 ## Design tokens are fixed
 
-The color palette (navy blue / graphite grey / mint green / white, defined
-as CSS custom properties in `src/styles/global.css`) was an explicit, deliberate
-choice by the site owner. Don't change the hex values as a side effect of
-an unrelated change — if a task calls for new UI, reuse the existing
-`--navy-*`, `--graphite-*`, `--mint-*` tokens rather than introducing new
-colors.
+The color palette (a warm cream/gold/amber/rust/brown "sand" scale, defined
+as `--sand-100` through `--sand-900` CSS custom properties in
+`src/styles/global.css`, replacing an earlier navy/graphite/mint palette) was
+an explicit, deliberate choice by the site owner. Don't change the hex
+values as a side effect of an unrelated change — if a task calls for new UI,
+reuse the existing `--sand-*` primitives or the semantic `--color-*` tokens
+built on them rather than introducing new colors.
+
+Note `--color-text-secondary` intentionally equals `--color-text-primary`
+(both full-strength `--sand-900`) rather than a lighter/muted variant — any
+lower-opacity blend toward the cream `--sand-100` page background drops
+below WCAG AA's 4.5:1 contrast minimum for body text (verified: 90% brown
+measures 4.58:1, 75% measures 3.38:1, already failing). Convey text
+hierarchy with font-size/weight, not a lighter shade of this palette.
