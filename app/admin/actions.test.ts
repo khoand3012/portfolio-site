@@ -13,7 +13,7 @@ import {
   readPortfolioContentWithEtag,
   savePortfolioContent,
 } from '../../src/lib/portfolioContent';
-import { saveTabBlocksAction, saveTabsAction } from './actions';
+import { saveHeroAction, saveTabBlocksAction, saveTabsAction } from './actions';
 
 const ALLOWED_EMAIL = 'owner@example.com';
 
@@ -305,5 +305,108 @@ describe('saveTabsAction', () => {
     expect(savePortfolioContent).toHaveBeenCalledWith(expect.anything(), {
       ifMatch: 'etag-1',
     });
+  });
+});
+
+describe('saveHeroAction', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(auth).mockResolvedValue({
+      user: { email: ALLOWED_EMAIL },
+      expires: '',
+    } as never);
+    process.env.ALLOWED_EMAILS = ALLOWED_EMAIL;
+    vi.mocked(readPortfolioContentWithEtag).mockResolvedValue({
+      data: fixtureContent(),
+      etag: 'etag-1',
+    });
+    vi.mocked(savePortfolioContent).mockResolvedValue(undefined);
+  });
+
+  function savedDoc(): PortfolioData {
+    return vi.mocked(savePortfolioContent).mock.calls[0]?.[0] as PortfolioData;
+  }
+
+  const validHero = {
+    name: 'Test',
+    initials: 'T',
+    role: 'Role',
+    profile: 'Profile',
+  };
+
+  it('rejects a session email not on the allow-list', async () => {
+    vi.mocked(auth).mockResolvedValue({
+      user: { email: 'stranger@example.com' },
+      expires: '',
+    } as never);
+    await expect(saveHeroAction(validHero)).rejects.toThrow('Not authorized.');
+    expect(savePortfolioContent).not.toHaveBeenCalled();
+  });
+
+  it('rejects a missing required field', async () => {
+    await expect(
+      saveHeroAction({ ...validHero, name: '' } as never),
+    ).rejects.toThrow(/name/i);
+    expect(savePortfolioContent).not.toHaveBeenCalled();
+  });
+
+  it('rejects a non-string optional field', async () => {
+    await expect(
+      saveHeroAction({ ...validHero, dob: 42 } as never),
+    ).rejects.toThrow(/dob/i);
+    expect(savePortfolioContent).not.toHaveBeenCalled();
+  });
+
+  it('accepts a hero with every optional field present, including dob and credential', async () => {
+    await expect(
+      saveHeroAction({
+        ...validHero,
+        phone: '+1 555',
+        email: 'a@b.com',
+        linkedin: 'linkedin.com/in/x',
+        location: 'Hanoi',
+        dob: '1 Jan 1995',
+        credential: 'PRINCE2 Practitioner',
+      }),
+    ).resolves.toBeUndefined();
+    expect(savedDoc().hero).toMatchObject({
+      dob: '1 Jan 1995',
+      credential: 'PRINCE2 Practitioner',
+    });
+  });
+
+  it('accepts a hero with every optional field absent', async () => {
+    await expect(saveHeroAction(validHero)).resolves.toBeUndefined();
+  });
+
+  it('leaves tabs and footer untouched', async () => {
+    await saveHeroAction(validHero);
+    const doc = savedDoc();
+    expect(doc.tabs).toEqual(fixtureContent().tabs);
+    expect(doc.footer).toBe('Footer');
+    expect(doc.version).toBe(2);
+  });
+
+  it('writes with the etag it read, so a concurrent save is detected', async () => {
+    await saveHeroAction(validHero);
+    expect(savePortfolioContent).toHaveBeenCalledWith(expect.anything(), {
+      ifMatch: 'etag-1',
+    });
+  });
+
+  it('surfaces a clear conflict message when the store detects a concurrent save', async () => {
+    vi.mocked(savePortfolioContent).mockRejectedValue(
+      new SaveConflictError('stale etag'),
+    );
+    await expect(saveHeroAction(validHero)).rejects.toThrow(
+      /Someone else saved changes/,
+    );
+  });
+
+  it('propagates a non-conflict save error unchanged', async () => {
+    vi.mocked(savePortfolioContent).mockRejectedValue(
+      new Error('store is down'),
+    );
+    await expect(saveHeroAction(validHero)).rejects.toThrow('store is down');
   });
 });

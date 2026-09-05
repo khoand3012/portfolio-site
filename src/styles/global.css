@@ -122,6 +122,15 @@ a {
   color: var(--sand-100);
   margin: 0 0 var(--spacing-md);
 }
+/* Sits directly under .role, so hierarchy comes from size/weight — not a
+   lighter shade of --sand-100, which is already this block's dimmest legible
+   tone against the hero's dark background. */
+.credential {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--sand-100);
+  margin: calc(-1 * var(--spacing-sm)) 0 var(--spacing-md);
+}
 .avatar {
   flex-shrink: 0;
   width: 76px;
@@ -791,4 +800,74 @@ footer::before {
   margin: var(--spacing-md) 0 0;
   font-size: 14px;
   font-weight: 600;
+}
+
+/* Hero form — reuses .tab-manager's input/button treatment rather than
+   redeclaring it, since both are plain admin forms on the same page. */
+.hero-form {
+  padding-top: var(--spacing-xl);
+  padding-bottom: var(--spacing-xl);
+}
+.hero-form h2 {
+  font-family: var(--font-headline);
+  margin: 0 0 var(--spacing-xs);
+}
+.hero-form-hint {
+  font-size: 14px;
+  margin: 0 0 var(--spacing-lg);
+}
+.hero-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+.hero-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  font-size: 13px;
+  font-weight: 600;
+}
+.hero-form-field input,
+.hero-form-field textarea {
+  padding: var(--spacing-sm) var(--spacing-md);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--color-text-primary);
+  background: var(--color-bg-content);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+}
+.hero-form-field input:focus-visible,
+.hero-form-field textarea:focus-visible,
+.hero-form button:focus-visible {
+  outline: 2px solid var(--color-accent-default);
+  outline-offset: 1px;
+}
+.hero-form-profile {
+  margin-bottom: var(--spacing-lg);
+}
+.hero-form-profile textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+.hero-form button {
+  padding: var(--spacing-sm) var(--spacing-md);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  background: var(--color-bg-content);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.hero-form button:hover:not(:disabled) {
+  border-color: var(--color-border-strong);
+}
+.hero-form button:disabled {
+  opacity: 0.45;
+  cursor: default;
 }

@@ -10,6 +10,7 @@ import { puckConfig } from '../../puck.config';
 import { blocksToPuckData, puckDataToBlocks } from '../lib/puckAdapter';
 import { toast } from '../lib/use-toast';
 import type { PortfolioData } from '../types';
+import { HeroForm } from './HeroForm';
 import { TabManager } from './TabManager';
 import { Toaster } from './Toaster';
 
@@ -21,6 +22,7 @@ const aiPlugin = createAiPlugin();
 // Not a valid crypto.randomUUID() and not a migrated v1 tab key, so it
 // cannot collide with a real tab id.
 const MANAGER_KEY = '__tabs__';
+const HERO_KEY = '__hero__';
 
 interface Props {
   initialData: PortfolioData;
@@ -29,9 +31,10 @@ interface Props {
 
 export function PuckAdmin({ initialData, userEmail }: Props) {
   const router = useRouter();
-  // A content tab's id, or the literal 'tabs' for the manager section. The
-  // manager is not a tab of the site, so it deliberately shares this state
-  // rather than sitting in a second one — exactly one thing is on screen.
+  // A content tab's id, or one of the two admin-only section keys (tab
+  // manager, hero form). Neither section is a tab of the site, so they
+  // deliberately share this state rather than each getting their own —
+  // exactly one thing is on screen.
   const [activeTabId, setActiveTabId] = useState<string>(
     initialData.tabs[0]?.id ?? MANAGER_KEY,
   );
@@ -48,6 +51,7 @@ export function PuckAdmin({ initialData, userEmail }: Props) {
 
   const activeTab = initialData.tabs.find((t) => t.id === activeTabId);
   const managingTabs = activeTabId === MANAGER_KEY;
+  const editingHero = activeTabId === HERO_KEY;
 
   // Parsing/deriving blocks and saving them fail for different reasons — keep
   // the messages distinct rather than collapsing both into one generic
@@ -93,9 +97,16 @@ export function PuckAdmin({ initialData, userEmail }: Props) {
               {t.label}
             </button>
           ))}
-          {/* Separated from the content tabs so it doesn't read as an
+          {/* Separated from the content tabs so neither reads as an
               eighth public-facing section of the site. */}
           <span className="tab-sep" aria-hidden="true" />
+          <button
+            type="button"
+            className={`tab-btn tab-btn-admin${editingHero ? ' active' : ''}`}
+            onClick={() => setActiveTabId(HERO_KEY)}
+          >
+            Edit hero
+          </button>
           <button
             type="button"
             className={`tab-btn tab-btn-admin${managingTabs ? ' active' : ''}`}
@@ -127,6 +138,8 @@ export function PuckAdmin({ initialData, userEmail }: Props) {
           re-read it, there'd be nothing to reconcile. */}
       {managingTabs ? (
         <TabManager tabs={initialData.tabs} />
+      ) : editingHero ? (
+        <HeroForm hero={initialData.hero} />
       ) : activeTab ? (
         <Puck
           key={activeTab.id}

@@ -1,5 +1,5 @@
 interface Props {
-  icon: 'phone' | 'mail' | 'linkedin' | 'pin';
+  icon: 'phone' | 'mail' | 'linkedin' | 'pin' | 'calendar';
   text?: string;
   href?: string;
 }
@@ -12,6 +12,8 @@ const ICON_PATHS: Record<Props['icon'], string> = {
   linkedin:
     '<path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/>',
   pin: '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/>',
+  calendar:
+    '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
 };
 
 export function MetaItem({ icon, text, href }: Props) {

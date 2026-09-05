@@ -18,6 +18,8 @@ export interface Hero {
   email?: string;
   linkedin?: string;
   location?: string;
+  dob?: string;
+  credential?: string;
   profile: string;
 }
 

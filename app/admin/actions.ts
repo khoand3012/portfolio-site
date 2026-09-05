@@ -18,7 +18,7 @@ import {
   savePortfolioContent,
 } from '../../src/lib/portfolioContent';
 import { sanitizeBlocks } from '../../src/lib/sanitizeBlocks';
-import type { Block, PortfolioData, Tab } from '../../src/types';
+import type { Block, Hero, PortfolioData, Tab } from '../../src/types';
 
 function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((v) => typeof v === 'string');
@@ -324,6 +324,58 @@ export async function saveTabsAction(metas: TabMeta[]): Promise<void> {
     if (error instanceof SaveConflictError) {
       throw new Error(
         'Someone else saved changes while you were editing the tabs. Reload the page and reapply your edit.',
+      );
+    }
+    throw error;
+  }
+}
+
+const HERO_REQUIRED_FIELDS = ['name', 'initials', 'role', 'profile'] as const;
+const HERO_OPTIONAL_FIELDS = [
+  'phone',
+  'email',
+  'linkedin',
+  'location',
+  'dob',
+  'credential',
+] as const;
+
+function assertHeroShape(data: unknown): asserts data is Hero {
+  if (typeof data !== 'object' || data === null) {
+    throw new Error('Invalid content shape: hero is not an object');
+  }
+  const record = data as Record<string, unknown>;
+  for (const field of HERO_REQUIRED_FIELDS) {
+    if (typeof record[field] !== 'string' || record[field].length === 0) {
+      throw new Error(`Invalid content shape: hero is missing ${field}`);
+    }
+  }
+  for (const field of HERO_OPTIONAL_FIELDS) {
+    assertOptionalString(record[field], 'hero', field);
+  }
+}
+
+export async function saveHeroAction(hero: Hero): Promise<void> {
+  const session = await auth();
+  // Re-checked server-side for the same reason as every other action here:
+  // a server action can be invoked directly, so it must not trust the UI.
+  if (!isAllowedEmail(session?.user?.email, process.env.ALLOWED_EMAILS)) {
+    throw new Error('Not authorized.');
+  }
+  assertHeroShape(hero);
+
+  // Hero and every tab live in one PortfolioData document, so a concurrent
+  // Hero save and tab save are the same class of race as two tab saves —
+  // same etag-protected read-modify-write.
+  const { data: current, etag } = await readPortfolioContentWithEtag();
+  const updated: PortfolioData = { ...current, hero };
+
+  try {
+    await savePortfolioContent(updated, { ifMatch: etag });
+  } catch (error) {
+    if (error instanceof SaveConflictError) {
+      throw new Error(
+        'Someone else saved changes while you were editing the hero. Reload the page and reapply your edit.',
       );
     }
     throw error;
