@@ -4,47 +4,24 @@ import { auth } from '../../auth';
 import { isAllowedEmail } from '../../src/lib/allowedEmails';
 import { SaveConflictError } from '../../src/lib/blobStore';
 import {
+  isOneOf,
+  LAYOUT_ALIGNS,
+  LAYOUT_COLUMNS,
+  LAYOUT_DIRECTIONS,
+  LAYOUT_JUSTIFIES,
+  LAYOUT_SPACINGS,
+  LAYOUT_SURFACES,
+  VIDEO_MODES,
+} from '../../src/lib/layoutOptions';
+import {
   readPortfolioContentWithEtag,
   savePortfolioContent,
 } from '../../src/lib/portfolioContent';
+import { sanitizeBlocks } from '../../src/lib/sanitizeBlocks';
 import type { Block, PortfolioData } from '../../src/types';
-
-const REQUIRED_TAB_KEYS: (keyof PortfolioData['tabs'])[] = [
-  'teaching',
-  'internationalEducation',
-  'testing',
-  'academicBackground',
-  'publications',
-  'talks',
-  'media',
-];
-
-function isKnownTabKey(key: unknown): key is keyof PortfolioData['tabs'] {
-  return (
-    typeof key === 'string' && (REQUIRED_TAB_KEYS as string[]).includes(key)
-  );
-}
 
 function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((v) => typeof v === 'string');
-}
-
-// Optional fields still need a shape check when present — the components
-// that render them (JobCard.tsx, EducationCard.tsx, CertificateGroup.tsx,
-// GalleryTile.tsx) call `.map`/property access on these unconditionally
-// once they're truthy, so a wrong-shaped-but-truthy value (e.g. a string
-// where an array is expected) throws at render time on the public page
-// instead of failing here at save time.
-function assertOptionalStringArray(
-  value: unknown,
-  label: string,
-  field: string,
-): void {
-  if (value !== undefined && !isStringArray(value)) {
-    throw new Error(
-      `Invalid content shape: ${label} has a non-string-array ${field}`,
-    );
-  }
 }
 
 function assertOptionalString(
@@ -59,110 +36,152 @@ function assertOptionalString(
   }
 }
 
-// PuckAdmin's onPublish hands this whatever puckDataToBlocks (Task 16) derives
-// from the editor's live component tree — content this app never validated on
-// the way in. Since app/page.tsx renders live (`dynamic = 'force-dynamic'`),
-// whatever passes this guard reaches the public page on the very next
-// request. This is a shape guard against garbage input, not a full schema
-// validator — same spirit and rigor as the assertPortfolioDataShape this
-// function replaces, just scoped one level down to a single tab's Block[]
-// instead of the whole PortfolioData document.
+const MAX_DEPTH = 6;
+const MAX_NODES = 2000;
+const MAX_RICHTEXT_CHARS = 20_000;
+
+function assertRichText(value: unknown, label: string, field: string): void {
+  if (typeof value !== 'string') {
+    throw new Error(
+      `Invalid content shape: ${label} has a non-string ${field}`,
+    );
+  }
+  if (value.length > MAX_RICHTEXT_CHARS) {
+    throw new Error(
+      `Invalid content shape: ${label}'s ${field} exceeds ${MAX_RICHTEXT_CHARS} characters`,
+    );
+  }
+}
+
+function assertEnum(
+  value: unknown,
+  allowed: readonly string[],
+  label: string,
+  field: string,
+): void {
+  if (!isOneOf(allowed, value)) {
+    throw new Error(
+      `Invalid content shape: ${label} has an unknown ${field} "${String(value)}"`,
+    );
+  }
+}
+
+// Recursive. The depth and node caps are new: the whole tree serializes into
+// one JSON document under one store key, and deep nesting would blow the
+// render stack on the public page. The depth cap is enforced here and only
+// here — Puck's slot allow/disallow lists are static component-name lists
+// with no notion of how deep a slot already sits, so a depth limit cannot be
+// expressed in the editor config. 6 is far above any plausible real layout
+// (a job entry needs 3).
 function assertBlocksShape(
   data: unknown,
-  tabKey: keyof PortfolioData['tabs'],
+  tabLabel: string,
+  path = 'blocks',
+  depth = 0,
+  counter = { n: 0 },
 ): asserts data is Block[] {
   if (!Array.isArray(data)) {
     throw new Error(
-      `Invalid content shape: tabs.${tabKey}.blocks is not an array`,
+      `Invalid content shape: ${tabLabel}.${path} is not an array`,
+    );
+  }
+  if (depth > MAX_DEPTH) {
+    throw new Error(
+      `Invalid content shape: ${tabLabel}.${path} nests deeper than ${MAX_DEPTH} levels`,
     );
   }
   data.forEach((block, i) => {
-    const label = `tabs.${tabKey}.blocks[${i}]`;
+    counter.n += 1;
+    if (counter.n > MAX_NODES) {
+      throw new Error(
+        `Invalid content shape: ${tabLabel} has more than ${MAX_NODES} blocks`,
+      );
+    }
+    const label = `${tabLabel}.${path}[${i}]`;
     if (typeof block !== 'object' || block === null) {
       throw new Error(`Invalid content shape: ${label} is not an object`);
     }
     const record = block as Record<string, unknown>;
     switch (record.type) {
-      case 'job':
-        if (
-          typeof record.company !== 'string' ||
-          typeof record.dates !== 'string'
-        ) {
+      case 'container':
+        assertEnum(record.direction, LAYOUT_DIRECTIONS, label, 'direction');
+        assertEnum(record.gap, LAYOUT_SPACINGS, label, 'gap');
+        assertEnum(record.padding, LAYOUT_SPACINGS, label, 'padding');
+        assertEnum(record.marginBottom, LAYOUT_SPACINGS, label, 'marginBottom');
+        assertEnum(record.align, LAYOUT_ALIGNS, label, 'align');
+        assertEnum(record.justify, LAYOUT_JUSTIFIES, label, 'justify');
+        assertEnum(record.columns, LAYOUT_COLUMNS, label, 'columns');
+        assertEnum(record.surface, LAYOUT_SURFACES, label, 'surface');
+        if (typeof record.wrap !== 'boolean') {
           throw new Error(
-            `Invalid content shape: ${label} (job) missing company/dates`,
+            `Invalid content shape: ${label} has a non-boolean wrap`,
           );
         }
-        assertOptionalString(record.role, label, 'role');
-        assertOptionalStringArray(record.bullets, label, 'bullets');
+        assertBlocksShape(
+          record.children,
+          tabLabel,
+          `${path}[${i}].children`,
+          depth + 1,
+          counter,
+        );
         break;
-      case 'placeholder':
-        if (
-          typeof record.company !== 'string' ||
-          typeof record.note !== 'string'
-        ) {
-          throw new Error(
-            `Invalid content shape: ${label} (placeholder) missing company/note`,
-          );
-        }
-        break;
-      case 'education':
-        if (
-          typeof record.school !== 'string' ||
-          typeof record.dates !== 'string' ||
-          typeof record.degree !== 'string'
-        ) {
-          throw new Error(
-            `Invalid content shape: ${label} (education) missing school/dates/degree`,
-          );
-        }
-        assertOptionalStringArray(record.bullets, label, 'bullets');
-        assertOptionalString(record.dissertation, label, 'dissertation');
-        break;
-      case 'certificate-group':
-        if (
-          typeof record.heading !== 'string' ||
-          !Array.isArray(record.certificates)
-        ) {
-          throw new Error(
-            `Invalid content shape: ${label} (certificate-group) missing heading/certificates`,
-          );
-        }
-        record.certificates.forEach((cert, ci) => {
-          const certLabel = `${label}.certificates[${ci}]`;
-          if (typeof cert !== 'object' || cert === null) {
-            throw new Error(
-              `Invalid content shape: ${certLabel} is not an object`,
-            );
-          }
-          const certRecord = cert as Record<string, unknown>;
-          if (typeof certRecord.text !== 'string') {
-            throw new Error(`Invalid content shape: ${certLabel} missing text`);
-          }
-          if (
-            certRecord.accent !== undefined &&
-            typeof certRecord.accent !== 'boolean'
-          ) {
-            throw new Error(
-              `Invalid content shape: ${certLabel} has a non-boolean accent`,
-            );
-          }
-        });
-        break;
-      case 'gallery-item':
-        if (record.itemType !== 'photo' && record.itemType !== 'video') {
-          throw new Error(
-            `Invalid content shape: ${label} (gallery-item) has invalid itemType`,
-          );
-        }
-        assertOptionalString(record.image, label, 'image');
-        assertOptionalString(record.videoUrl, label, 'videoUrl');
-        break;
-      case 'note':
+      case 'heading':
         if (typeof record.text !== 'string') {
           throw new Error(
-            `Invalid content shape: ${label} (note) missing text`,
+            `Invalid content shape: ${label} (heading) missing text`,
           );
         }
+        assertEnum(record.level, ['h2', 'h3', 'h4'], label, 'level');
+        break;
+      case 'text':
+        assertRichText(record.html, label, 'html');
+        assertEnum(
+          record.variant,
+          ['body', 'subtitle', 'small'],
+          label,
+          'variant',
+        );
+        break;
+      case 'dates':
+        if (typeof record.text !== 'string') {
+          throw new Error(
+            `Invalid content shape: ${label} (dates) missing text`,
+          );
+        }
+        break;
+      case 'bullets':
+        if (!isStringArray(record.items)) {
+          throw new Error(
+            `Invalid content shape: ${label} (bullets) has a non-string-array items`,
+          );
+        }
+        record.items.forEach((item, ii) => {
+          assertRichText(item, `${label}.items[${ii}]`, 'value');
+        });
+        break;
+      case 'badge':
+        if (typeof record.text !== 'string') {
+          throw new Error(
+            `Invalid content shape: ${label} (badge) missing text`,
+          );
+        }
+        if (record.accent !== undefined && typeof record.accent !== 'boolean') {
+          throw new Error(
+            `Invalid content shape: ${label} has a non-boolean accent`,
+          );
+        }
+        assertOptionalString(record.year, label, 'year');
+        break;
+      case 'image':
+        assertOptionalString(record.src, label, 'src');
+        assertOptionalString(record.alt, label, 'alt');
+        assertOptionalString(record.caption, label, 'caption');
+        break;
+      case 'video':
+        assertEnum(record.mode, VIDEO_MODES, label, 'mode');
+        assertOptionalString(record.url, label, 'url');
+        assertOptionalString(record.poster, label, 'poster');
+        assertOptionalString(record.caption, label, 'caption');
         break;
       default:
         throw new Error(
@@ -173,7 +192,7 @@ function assertBlocksShape(
 }
 
 export async function saveTabBlocksAction(
-  tabKey: keyof PortfolioData['tabs'],
+  tabId: string,
   blocks: Block[],
 ): Promise<void> {
   const session = await auth();
@@ -182,30 +201,30 @@ export async function saveTabBlocksAction(
   if (!isAllowedEmail(session?.user?.email, process.env.ALLOWED_EMAILS)) {
     throw new Error('Not authorized.');
   }
-  // tabKey crosses the same trust boundary as blocks does (it's a server
-  // action parameter, not a value this function derived itself). An unknown
-  // key would spread `undefined` into `current.tabs[tabKey]` below, saving a
-  // tab with `blocks` but no `label` — exactly the kind of malformed document
-  // assertPortfolioDataShape used to reject before this action existed.
-  if (!isKnownTabKey(tabKey)) {
-    throw new Error(
-      `Invalid content shape: unknown tab key "${String(tabKey)}"`,
-    );
+  if (typeof tabId !== 'string' || tabId.length === 0) {
+    throw new Error('Invalid content shape: missing tab id');
   }
-  assertBlocksShape(blocks, tabKey);
-  // Strict, non-fail-soft read: a transient store read failure must throw
-  // here rather than silently fall back to seed data, since this is the
-  // read half of a read-modify-write — see the comment on
-  // readPortfolioContentWithEtag in src/lib/portfolioContent.ts. A thrown
-  // error here propagates up through this server action and is caught by
-  // PuckAdmin.tsx's handlePublish, which reports "Save failed: ..." — that
-  // is strictly better than silently saving a corrupted document over
-  // hero/footer/the other six tabs.
+  assertBlocksShape(blocks, `tabs[${tabId}]`);
+
   const { data: current, etag } = await readPortfolioContentWithEtag();
-  const updated: PortfolioData = {
-    ...current,
-    tabs: { ...current.tabs, [tabKey]: { ...current.tabs[tabKey], blocks } },
-  };
+  // Validated against the FRESHLY READ document, not a static list — and not
+  // redundant with the etag check. Two writers now exist: if the tab manager
+  // deleted this tab and then a still-mounted Puck editor publishes, this
+  // read happens after that delete, the etag matches, and a naive write would
+  // silently resurrect the deleted tab.
+  const index = current.tabs.findIndex((t) => t.id === tabId);
+  if (index === -1) {
+    throw new Error('That tab no longer exists. Reload the page.');
+  }
+
+  // Sanitize AFTER the shape guard and before the write: the guard rejects,
+  // this rewrites. Disallowed markup is stripped rather than failing the
+  // save — see src/lib/sanitizeBlocks.ts.
+  const tabs = current.tabs.map((tab, i) =>
+    i === index ? { ...tab, blocks: sanitizeBlocks(blocks) } : tab,
+  );
+  const updated: PortfolioData = { ...current, tabs };
+
   try {
     await savePortfolioContent(updated, { ifMatch: etag });
   } catch (error) {

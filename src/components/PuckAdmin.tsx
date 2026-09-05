@@ -17,16 +17,6 @@ import { Toaster } from './Toaster';
 // ever be authored by the site owner, not generated.
 const aiPlugin = createAiPlugin();
 
-const TAB_ORDER: { key: keyof PortfolioData['tabs']; label: string }[] = [
-  { key: 'teaching', label: 'Teaching' },
-  { key: 'internationalEducation', label: 'International Education' },
-  { key: 'testing', label: 'Testing' },
-  { key: 'academicBackground', label: 'Academic Background' },
-  { key: 'publications', label: 'Publications' },
-  { key: 'talks', label: 'Talks' },
-  { key: 'media', label: 'Media' },
-];
-
 interface Props {
   initialData: PortfolioData;
   userEmail?: string | null;
@@ -34,8 +24,7 @@ interface Props {
 
 export function PuckAdmin({ initialData, userEmail }: Props) {
   const router = useRouter();
-  // biome-ignore lint/style/noNonNullAssertion: TAB_ORDER is a fixed, non-empty literal declared above.
-  const [activeKey, setActiveKey] = useState(TAB_ORDER[0]!.key);
+  const [activeTabId, setActiveTabId] = useState(initialData.tabs[0]?.id ?? '');
 
   // Ref guard, not just an empty dependency array: React 18 Strict Mode
   // (dev only) mounts every effect twice, which would otherwise fire this
@@ -47,7 +36,7 @@ export function PuckAdmin({ initialData, userEmail }: Props) {
     toast({ description: `Signed in as ${userEmail}` });
   }, [userEmail]);
 
-  const activeTab = initialData.tabs[activeKey];
+  const activeTab = initialData.tabs.find((t) => t.id === activeTabId);
 
   // Parsing/deriving blocks and saving them fail for different reasons — keep
   // the messages distinct rather than collapsing both into one generic
@@ -56,13 +45,13 @@ export function PuckAdmin({ initialData, userEmail }: Props) {
   async function handlePublish(data: Data) {
     try {
       const blocks = puckDataToBlocks(data);
-      await saveTabBlocksAction(activeKey, blocks);
+      await saveTabBlocksAction(activeTabId, blocks);
       toast({ description: 'Saved.' });
       // `initialData` is a server-component prop, fetched once when
       // AdminPage rendered — it does not update just because a save
       // succeeded. Without this, switching away from the just-saved tab
-      // and back re-mounts <Puck> (via key={activeKey}) with the SAME
-      // stale `initialData.tabs[activeKey].blocks`, showing pre-publish
+      // and back re-mounts <Puck> (via key={activeTab.id}) with the SAME
+      // stale `initialData.tabs[...].blocks`, showing pre-publish
       // content even though the save genuinely succeeded. router.refresh()
       // re-runs AdminPage (a Server Component, already
       // `dynamic = 'force-dynamic'` per Ruling A) so it re-calls
@@ -83,12 +72,12 @@ export function PuckAdmin({ initialData, userEmail }: Props) {
     <div>
       <nav className="tabs">
         <div className="wrap">
-          {TAB_ORDER.map((t) => (
+          {initialData.tabs.map((t) => (
             <button
-              key={t.key}
+              key={t.id}
               type="button"
-              className={`tab-btn${t.key === activeKey ? ' active' : ''}`}
-              onClick={() => setActiveKey(t.key)}
+              className={`tab-btn${t.id === activeTabId ? ' active' : ''}`}
+              onClick={() => setActiveTabId(t.id)}
             >
               {t.label}
             </button>
@@ -96,7 +85,7 @@ export function PuckAdmin({ initialData, userEmail }: Props) {
         </div>
       </nav>
       <Toaster />
-      {/* key={activeKey} forces a remount with fresh `data` when switching tabs —
+      {/* key={activeTab.id} forces a remount with fresh `data` when switching tabs —
           Puck owns its state internally after mount, so this is how a new
           initial document gets loaded. `data` must not change after `<Puck>`
           mounts (per the puck skill) — remounting via `key` is the supported
@@ -109,20 +98,26 @@ export function PuckAdmin({ initialData, userEmail }: Props) {
       {/* Note on router.refresh() above: it re-renders this component with a
           fresh `initialData` prop, so `data={blocksToPuckData(...)}` below
           technically produces a new object identity on that re-render even
-          though <Puck> stays mounted (same key={activeKey}). This is
+          though <Puck> stays mounted (same key={activeTab.id}). This is
           harmless, not an unhandled bug — Puck only reads `data` once, at
           mount, as the initial document; it does not re-sync on every
           re-render of a changed `data` prop. The refetched blocks are also
           byte-equivalent to what was just published, so even if Puck did
           re-read it, there'd be nothing to reconcile. */}
-      <Puck
-        key={activeKey}
-        config={puckConfig}
-        data={blocksToPuckData(activeTab.blocks)}
-        onPublish={handlePublish}
-        plugins={[aiPlugin]}
-        height="calc(100dvh - 3rem)"
-      />
+      {activeTab ? (
+        <Puck
+          key={activeTab.id}
+          config={puckConfig}
+          data={blocksToPuckData(activeTab.blocks)}
+          onPublish={handlePublish}
+          plugins={[aiPlugin]}
+          height="calc(100dvh - 3rem)"
+        />
+      ) : (
+        <div className="wrap">
+          <p>This site has no tabs yet.</p>
+        </div>
+      )}
     </div>
   );
 }
