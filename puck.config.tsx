@@ -21,7 +21,7 @@ import type { Config } from '@puckeditor/core';
 import type { ComponentType } from 'react';
 import { Badge } from './src/components/Badge';
 import { Bullets } from './src/components/Bullets';
-import { Container } from './src/components/Container';
+import { containerClassName } from './src/components/Container';
 import { Dates } from './src/components/Dates';
 import { Heading } from './src/components/Heading';
 import { Image } from './src/components/Image';
@@ -99,15 +99,21 @@ const BASE_LAYOUT: Omit<ContainerProps, 'children'> = {
   surface: 'none',
 };
 
+// Renders the slot AS the layout element rather than wrapping it in a
+// <Container>. Puck renders a slot as its own drop-zone element and makes the
+// blocks that element's children, so wrapping left our flex container with
+// exactly one child — the drop zone — and `direction: row` had nothing to act
+// on: every container looked vertical in the editor while rendering correctly
+// on the public page. Puck forwards `className` onto the drop-zone element
+// itself (DropZoneEdit in @puckeditor/core), and its own drop-zone rule sets
+// no `display`, so the layout classes compose with it cleanly.
 const renderContainer = ({
   children: Children,
   ...layout
 }: {
-  children: ComponentType;
+  children: ComponentType<{ className?: string }>;
 } & Omit<ContainerProps, 'children'>) => (
-  <Container {...layout}>
-    <Children />
-  </Container>
+  <Children className={containerClassName(layout)} />
 );
 
 export const puckConfig: Config<PuckComponentProps> = {
