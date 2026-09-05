@@ -18,7 +18,7 @@ import {
   savePortfolioContent,
 } from '../../src/lib/portfolioContent';
 import { sanitizeBlocks } from '../../src/lib/sanitizeBlocks';
-import type { Block, PortfolioData } from '../../src/types';
+import type { Block, PortfolioData, Tab } from '../../src/types';
 
 function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((v) => typeof v === 'string');
@@ -235,6 +235,95 @@ export async function saveTabBlocksAction(
     if (error instanceof SaveConflictError) {
       throw new Error(
         'Someone else saved changes to this tab while you were editing. Reload the page and reapply your edit.',
+      );
+    }
+    throw error;
+  }
+}
+
+const MAX_TABS = 20;
+
+export interface TabMeta {
+  id: string;
+  label: string;
+}
+
+// The tab manager edits the whole list and publishes once, so add, rename,
+// reorder and delete all arrive here as a single desired-state list. One
+// action with one guard and one etag-protected write is more atomic than
+// four granular actions racing each other — and it means a reorder can
+// never be observed half-applied.
+function assertTabMetasShape(data: unknown): asserts data is TabMeta[] {
+  if (!Array.isArray(data)) {
+    throw new Error('Invalid content shape: tabs is not an array');
+  }
+  if (data.length > MAX_TABS) {
+    throw new Error(
+      `Invalid content shape: more than ${MAX_TABS} tabs (the same class of bound as the per-tab block cap)`,
+    );
+  }
+  const ids = new Set<string>();
+  data.forEach((meta, i) => {
+    const label = `tabs[${i}]`;
+    if (typeof meta !== 'object' || meta === null) {
+      throw new Error(`Invalid content shape: ${label} is not an object`);
+    }
+    const record = meta as Record<string, unknown>;
+    if (typeof record.id !== 'string' || record.id.length === 0) {
+      throw new Error(`Invalid content shape: ${label} has no id`);
+    }
+    // Trimmed, because a whitespace-only label renders as an unclickable
+    // blank tab button on the public page — visible as a gap, impossible to
+    // diagnose from the page itself.
+    if (typeof record.label !== 'string' || record.label.trim().length === 0) {
+      throw new Error(`Invalid content shape: ${label} has an empty label`);
+    }
+    if (ids.has(record.id)) {
+      throw new Error(
+        `Invalid content shape: duplicate tab id "${record.id}" — ids must be unique`,
+      );
+    }
+    ids.add(record.id);
+  });
+}
+
+export async function saveTabsAction(metas: TabMeta[]): Promise<void> {
+  const session = await auth();
+  // Re-checked server-side for the same reason as every other action here:
+  // a server action can be invoked directly, so it must not trust the UI.
+  if (!isAllowedEmail(session?.user?.email, process.env.ALLOWED_EMAILS)) {
+    throw new Error('Not authorized.');
+  }
+  assertTabMetasShape(metas);
+
+  const { data: current, etag } = await readPortfolioContentWithEtag();
+
+  // Reconciled against the freshly-read document, so a tab's blocks travel
+  // with it through a rename or a reorder. Anything the caller doesn't list
+  // is deleted with its content — that is the delete path, and the UI is
+  // what makes it deliberate. The recovery path is the timestamped
+  // history/<ISO>.json snapshot every save already writes.
+  const existing = new Map(current.tabs.map((tab) => [tab.id, tab]));
+  const tabs: Tab[] = metas.map((meta) => {
+    const previous = existing.get(meta.id);
+    return {
+      id: meta.id,
+      label: meta.label.trim(),
+      // An id the document doesn't know is a tab the owner just created:
+      // TabManager generates it client-side so it can key the row before
+      // this save round-trips.
+      blocks: previous?.blocks ?? [],
+    };
+  });
+
+  const updated: PortfolioData = { ...current, tabs };
+
+  try {
+    await savePortfolioContent(updated, { ifMatch: etag });
+  } catch (error) {
+    if (error instanceof SaveConflictError) {
+      throw new Error(
+        'Someone else saved changes while you were editing the tabs. Reload the page and reapply your edit.',
       );
     }
     throw error;

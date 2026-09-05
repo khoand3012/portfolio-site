@@ -697,3 +697,98 @@ footer::before {
   color: var(--color-text-secondary);
   margin-top: var(--spacing-xs);
 }
+
+/* Admin tab manager. Only ever rendered inside /admin, but it lives here
+   with everything else — this project keeps one stylesheet, and splitting
+   admin styles out is where per-component drift would start. */
+.tab-sep {
+  width: 1px;
+  align-self: stretch;
+  margin: var(--spacing-sm) var(--spacing-sm);
+  background: var(--color-border-default);
+  flex: 0 0 auto;
+}
+.tab-btn-admin {
+  font-style: italic;
+}
+.tab-manager {
+  padding-top: var(--spacing-xl);
+  padding-bottom: var(--spacing-xl);
+}
+.tab-manager h2 {
+  font-family: var(--font-headline);
+  margin: 0 0 var(--spacing-xs);
+}
+.tab-manager-hint {
+  font-size: 14px;
+  margin: 0 0 var(--spacing-lg);
+}
+.tab-manager-list {
+  list-style: none;
+  margin: 0 0 var(--spacing-lg);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+.tab-manager-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+.tab-manager-row input {
+  flex: 1 1 220px;
+  min-width: 0;
+  padding: var(--spacing-sm) var(--spacing-md);
+  font: inherit;
+  font-size: 14px;
+  color: var(--color-text-primary);
+  background: var(--color-bg-content);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+}
+.tab-manager-row input:focus-visible,
+.tab-manager button:focus-visible {
+  outline: 2px solid var(--color-accent-default);
+  outline-offset: 1px;
+}
+.tab-manager button {
+  padding: var(--spacing-sm) var(--spacing-md);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  background: var(--color-bg-content);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.tab-manager button:hover:not(:disabled) {
+  border-color: var(--color-border-strong);
+}
+.tab-manager button:disabled {
+  /* Reduced contrast is acceptable here and only here: a disabled control
+     is not body text, and its state has to be perceivable without relying
+     on a second shade of the palette for reading. */
+  opacity: 0.45;
+  cursor: default;
+}
+/* Selector is specific enough to beat `.tab-manager button` above on its
+   own; !important would work too but starts an arms race in a stylesheet
+   this small. */
+.tab-manager button.tab-manager-confirm {
+  background: var(--color-accent-default);
+  border-color: var(--color-accent-default);
+  color: var(--color-text-on-accent);
+}
+.tab-manager-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+.tab-manager-warning {
+  margin: var(--spacing-md) 0 0;
+  font-size: 14px;
+  font-weight: 600;
+}

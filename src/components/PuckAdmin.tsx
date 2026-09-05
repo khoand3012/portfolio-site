@@ -10,12 +10,17 @@ import { puckConfig } from '../../puck.config';
 import { blocksToPuckData, puckDataToBlocks } from '../lib/puckAdapter';
 import { toast } from '../lib/use-toast';
 import type { PortfolioData } from '../types';
+import { TabManager } from './TabManager';
 import { Toaster } from './Toaster';
 
 // Never set `chat.examplePrompts` here — per the puck skill's AI guidance,
 // invented example prompts read as first-party product copy and should only
 // ever be authored by the site owner, not generated.
 const aiPlugin = createAiPlugin();
+
+// Not a valid crypto.randomUUID() and not a migrated v1 tab key, so it
+// cannot collide with a real tab id.
+const MANAGER_KEY = '__tabs__';
 
 interface Props {
   initialData: PortfolioData;
@@ -24,7 +29,12 @@ interface Props {
 
 export function PuckAdmin({ initialData, userEmail }: Props) {
   const router = useRouter();
-  const [activeTabId, setActiveTabId] = useState(initialData.tabs[0]?.id ?? '');
+  // A content tab's id, or the literal 'tabs' for the manager section. The
+  // manager is not a tab of the site, so it deliberately shares this state
+  // rather than sitting in a second one — exactly one thing is on screen.
+  const [activeTabId, setActiveTabId] = useState<string>(
+    initialData.tabs[0]?.id ?? MANAGER_KEY,
+  );
 
   // Ref guard, not just an empty dependency array: React 18 Strict Mode
   // (dev only) mounts every effect twice, which would otherwise fire this
@@ -37,6 +47,7 @@ export function PuckAdmin({ initialData, userEmail }: Props) {
   }, [userEmail]);
 
   const activeTab = initialData.tabs.find((t) => t.id === activeTabId);
+  const managingTabs = activeTabId === MANAGER_KEY;
 
   // Parsing/deriving blocks and saving them fail for different reasons — keep
   // the messages distinct rather than collapsing both into one generic
@@ -82,6 +93,16 @@ export function PuckAdmin({ initialData, userEmail }: Props) {
               {t.label}
             </button>
           ))}
+          {/* Separated from the content tabs so it doesn't read as an
+              eighth public-facing section of the site. */}
+          <span className="tab-sep" aria-hidden="true" />
+          <button
+            type="button"
+            className={`tab-btn tab-btn-admin${managingTabs ? ' active' : ''}`}
+            onClick={() => setActiveTabId(MANAGER_KEY)}
+          >
+            Manage tabs
+          </button>
         </div>
       </nav>
       <Toaster />
@@ -104,7 +125,9 @@ export function PuckAdmin({ initialData, userEmail }: Props) {
           re-render of a changed `data` prop. The refetched blocks are also
           byte-equivalent to what was just published, so even if Puck did
           re-read it, there'd be nothing to reconcile. */}
-      {activeTab ? (
+      {managingTabs ? (
+        <TabManager tabs={initialData.tabs} />
+      ) : activeTab ? (
         <Puck
           key={activeTab.id}
           config={puckConfig}
@@ -115,7 +138,7 @@ export function PuckAdmin({ initialData, userEmail }: Props) {
         />
       ) : (
         <div className="wrap">
-          <p>This site has no tabs yet.</p>
+          <p>This site has no tabs yet. Use “Manage tabs” above to add one.</p>
         </div>
       )}
     </div>
