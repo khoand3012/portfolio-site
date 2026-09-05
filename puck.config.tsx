@@ -21,7 +21,10 @@ import type { Config } from '@puckeditor/core';
 import type { ComponentType } from 'react';
 import { Badge } from './src/components/Badge';
 import { Bullets } from './src/components/Bullets';
-import { containerClassName } from './src/components/Container';
+import {
+  containerBoxClassName,
+  containerFlowClassName,
+} from './src/components/Container';
 import { Dates } from './src/components/Dates';
 import { Heading } from './src/components/Heading';
 import { Image } from './src/components/Image';
@@ -99,21 +102,31 @@ const BASE_LAYOUT: Omit<ContainerProps, 'children'> = {
   surface: 'none',
 };
 
-// Renders the slot AS the layout element rather than wrapping it in a
-// <Container>. Puck renders a slot as its own drop-zone element and makes the
-// blocks that element's children, so wrapping left our flex container with
-// exactly one child — the drop zone — and `direction: row` had nothing to act
-// on: every container looked vertical in the editor while rendering correctly
-// on the public page. Puck forwards `className` onto the drop-zone element
-// itself (DropZoneEdit in @puckeditor/core), and its own drop-zone rule sets
-// no `display`, so the layout classes compose with it cleanly.
+// Splits the container's classes across two elements, which the public page
+// keeps as one. Puck renders a slot as its own drop-zone element and makes
+// the blocks that element's children, so:
+//
+//   - The FLOW classes go on the drop zone (Puck forwards `className` onto it
+//     — see DropZoneEdit in @puckeditor/core, whose own rule sets no
+//     `display`, so ours composes cleanly). Without this the flex container
+//     has exactly one child, the drop zone, and `direction: row` has nothing
+//     to act on: containers look vertical in the editor while rendering
+//     correctly on the public page.
+//   - The BOX classes stay on an outer element, so the drop zone remains
+//     NESTED inside the component element. Puck's area/zone depth tracking
+//     decides which zone accepts a drop, and it treats those as distinct
+//     nodes; collapsing them makes a drag into an empty container land in
+//     the parent zone, dropping the block below the container instead of
+//     inside it.
 const renderContainer = ({
   children: Children,
   ...layout
 }: {
   children: ComponentType<{ className?: string }>;
 } & Omit<ContainerProps, 'children'>) => (
-  <Children className={containerClassName(layout)} />
+  <div className={containerBoxClassName(layout)}>
+    <Children className={containerFlowClassName(layout)} />
+  </div>
 );
 
 export const puckConfig: Config<PuckComponentProps> = {
