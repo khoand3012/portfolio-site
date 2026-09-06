@@ -13,6 +13,7 @@ import { blocksToPuckData, puckDataToBlocks } from '../lib/puckAdapter';
 import { toast } from '../lib/use-toast';
 import type { Hero, PortfolioData, Tab } from '../types';
 import { HeroForm } from './HeroForm';
+import { CLOSE_ICON, HERO_ICON, PREVIEW_ICON, TABS_ICON } from './icons';
 import { TabManager } from './TabManager';
 import { Toaster } from './Toaster';
 
@@ -29,44 +30,6 @@ interface Props {
 /** Which full-screen editor sits over the canvas, if any. */
 type Panel = 'hero' | 'tabs' | null;
 
-// Inline SVGs rather than an icon package: the only one already in the tree is
-// lucide-react, and that is a transitive dependency of Puck's own bundle, not
-// something this app declares — importing it directly would break the day Puck
-// drops it. Same approach as MetaItem.tsx.
-const icon = (paths: ReactNode) => (
-  <svg
-    viewBox="0 0 24 24"
-    width="14"
-    height="14"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-  >
-    {paths}
-  </svg>
-);
-
-const HERO_ICON = icon(
-  <>
-    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-    <circle cx="12" cy="7" r="4" />
-  </>,
-);
-const TABS_ICON = icon(
-  <>
-    <rect x="3" y="4" width="18" height="16" rx="2" />
-    <path d="M3 9h18M9 9v11" />
-  </>,
-);
-const PREVIEW_ICON = icon(
-  <>
-    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" />
-    <circle cx="12" cy="12" r="3" />
-  </>,
-);
 function PanelOverlay({
   title,
   onClose,
@@ -95,8 +58,16 @@ function PanelOverlay({
         aria-label={title}
       >
         <div className="admin-panel-bar">
-          <button type="button" className="admin-panel-close" onClick={onClose}>
-            ✕ Close
+          {/* Icon-only, so it carries its own accessible name — the glyph is
+              aria-hidden and would otherwise leave the control unlabelled. */}
+          <button
+            type="button"
+            className="admin-panel-close"
+            onClick={onClose}
+            aria-label={`Close ${title.toLowerCase()} editor`}
+            title="Close"
+          >
+            {CLOSE_ICON}
           </button>
         </div>
         <div className="admin-panel-body">{children}</div>

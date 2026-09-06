@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { saveTabsAction } from '../../app/admin/actions';
 import { toast } from '../lib/use-toast';
 import type { Tab } from '../types';
+import { TRASH_ICON } from './icons';
 
 interface Props {
   tabs: Tab[];
@@ -194,12 +195,18 @@ export function TabManager({ tabs, onSaved }: Props) {
                 Delete “{row.label}” and its content?
               </button>
             ) : (
+              // Icon-only: aria-label is what names it, since the glyph is
+              // aria-hidden. The CONFIRM step above stays full text on
+              // purpose — an icon is fine for arming a delete, but the step
+              // that actually discards a tab's content should say so in words.
               <button
                 type="button"
+                className="tab-manager-remove"
                 aria-label={`Remove ${row.label}`}
+                title={`Remove ${row.label}`}
                 onClick={() => setArmedDeleteId(row.id)}
               >
-                Remove
+                {TRASH_ICON}
               </button>
             )}
           </li>
