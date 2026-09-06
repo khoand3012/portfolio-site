@@ -1,7 +1,7 @@
 'use client';
 
 import type { Data } from '@puckeditor/core';
-import { Button, Puck, usePuck } from '@puckeditor/core';
+import { Button, Puck } from '@puckeditor/core';
 import { createAiPlugin } from '@puckeditor/plugin-ai';
 import { useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
@@ -13,6 +13,7 @@ import { blocksToPuckData, puckDataToBlocks } from '../lib/puckAdapter';
 import { toast } from '../lib/use-toast';
 import type { Hero, PortfolioData, Tab } from '../types';
 import { HeroForm } from './HeroForm';
+import { CLOSE_ICON, HERO_ICON, PREVIEW_ICON, TABS_ICON } from './icons';
 import { TabManager } from './TabManager';
 import { Toaster } from './Toaster';
 
@@ -28,75 +29,6 @@ interface Props {
 
 /** Which full-screen editor sits over the canvas, if any. */
 type Panel = 'hero' | 'tabs' | null;
-
-// Inline SVGs rather than an icon package: the only one already in the tree is
-// lucide-react, and that is a transitive dependency of Puck's own bundle, not
-// something this app declares — importing it directly would break the day Puck
-// drops it. Same approach as MetaItem.tsx.
-const icon = (paths: ReactNode) => (
-  <svg
-    viewBox="0 0 24 24"
-    width="14"
-    height="14"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-  >
-    {paths}
-  </svg>
-);
-
-const HERO_ICON = icon(
-  <>
-    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-    <circle cx="12" cy="7" r="4" />
-  </>,
-);
-const TABS_ICON = icon(
-  <>
-    <rect x="3" y="4" width="18" height="16" rx="2" />
-    <path d="M3 9h18M9 9v11" />
-  </>,
-);
-const PREVIEW_ICON = icon(
-  <>
-    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" />
-    <circle cx="12" cy="12" r="3" />
-  </>,
-);
-const EDIT_ICON = icon(
-  <>
-    <path d="M12 20h9" />
-    <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" />
-  </>,
-);
-
-// Puck's own previewMode: 'interactive' renders the page as a visitor sees it
-// (links clickable, no drag handles), 'edit' is the editor. Toggling it shows
-// UNSAVED work, which opening the public site in a tab cannot do — the public
-// page only ever renders what has been published.
-function PreviewToggle() {
-  const { appState, dispatch } = usePuck();
-  const previewing = appState.ui.previewMode === 'interactive';
-
-  return (
-    <Button
-      variant="secondary"
-      icon={previewing ? EDIT_ICON : PREVIEW_ICON}
-      onClick={() =>
-        dispatch({
-          type: 'setUi',
-          ui: { previewMode: previewing ? 'edit' : 'interactive' },
-        })
-      }
-    >
-      {previewing ? 'Back to editing' : 'Preview'}
-    </Button>
-  );
-}
 
 function PanelOverlay({
   title,
@@ -126,8 +58,16 @@ function PanelOverlay({
         aria-label={title}
       >
         <div className="admin-panel-bar">
-          <button type="button" className="admin-panel-close" onClick={onClose}>
-            ✕ Close
+          {/* Icon-only, so it carries its own accessible name — the glyph is
+              aria-hidden and would otherwise leave the control unlabelled. */}
+          <button
+            type="button"
+            className="admin-panel-close"
+            onClick={onClose}
+            aria-label={`Close ${title.toLowerCase()} editor`}
+            title="Close"
+          >
+            {CLOSE_ICON}
           </button>
         </div>
         <div className="admin-panel-body">{children}</div>
@@ -251,7 +191,12 @@ export function PuckAdmin({ initialData, userEmail }: Props) {
   // before it so Publish stays the last, primary action.
   const headerActions = ({ children }: { children: ReactNode }) => (
     <>
-      <PreviewToggle />
+      {/* Opens the live public page in a new tab. Note this shows PUBLISHED
+          content — unpublished edits in this editor will not appear there
+          until they are published. */}
+      <Button variant="secondary" icon={PREVIEW_ICON} href="/" newTab>
+        Preview
+      </Button>
       <Button
         variant="secondary"
         icon={HERO_ICON}

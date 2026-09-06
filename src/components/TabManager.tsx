@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { saveTabsAction } from '../../app/admin/actions';
 import { toast } from '../lib/use-toast';
 import type { Tab } from '../types';
+import { TRASH_ICON } from './icons';
 
 interface Props {
   tabs: Tab[];
@@ -33,6 +34,12 @@ export function TabManager({ tabs, onSaved }: Props) {
   );
   const [armedDeleteId, setArmedDeleteId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  // Index of the row being dragged. Kept in React state rather than read back
+  // out of dataTransfer: dataTransfer is unreadable during dragover in most
+  // browsers (only the drop event may read it), and jsdom does not implement
+  // it at all, so this is both the portable and the testable choice.
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dropIndex, setDropIndex] = useState<number | null>(null);
 
   // Ids are generated here rather than server-side so a new row can be
   // keyed, renamed and reordered before the save round-trips. saveTabsAction
@@ -67,6 +74,23 @@ export function TabManager({ tabs, onSaved }: Props) {
     setArmedDeleteId(null);
   }
 
+  function moveRowTo(from: number, to: number) {
+    setRows((current) => {
+      if (from === to || from < 0 || to < 0) return current;
+      if (from >= current.length || to >= current.length) return current;
+      const next = [...current];
+      const [moved] = next.splice(from, 1);
+      if (!moved) return current;
+      next.splice(to, 0, moved);
+      return next;
+    });
+  }
+
+  function endDrag() {
+    setDragIndex(null);
+    setDropIndex(null);
+  }
+
   async function publish() {
     setSaving(true);
     try {
@@ -98,13 +122,48 @@ export function TabManager({ tabs, onSaved }: Props) {
     <div className="wrap tab-manager">
       <h2>Tabs</h2>
       <p className="tab-manager-hint">
-        Add, rename, reorder or remove the sections of the public page. Nothing
-        changes until you publish.
+        Drag a row by its handle to reorder, or use the arrows. Add, rename and
+        remove the sections of the public page here too — nothing changes until
+        you publish.
       </p>
 
       <ul className="tab-manager-list">
         {rows.map((row, i) => (
-          <li key={row.id} className="tab-manager-row">
+          <li
+            key={row.id}
+            className={`tab-manager-row${dragIndex === i ? ' dragging' : ''}${
+              dropIndex === i && dragIndex !== i ? ' drop-target' : ''
+            }`}
+            // The row is the drop target; only the handle starts a drag, so
+            // dragging inside the label input still selects text.
+            onDragOver={(e) => {
+              if (dragIndex === null) return;
+              e.preventDefault();
+              setDropIndex(i);
+            }}
+            onDrop={(e) => {
+              if (dragIndex === null) return;
+              e.preventDefault();
+              moveRowTo(dragIndex, i);
+              endDrag();
+            }}
+          >
+            <span
+              className="tab-manager-handle"
+              draggable
+              title="Drag to reorder"
+              aria-hidden="true"
+              onDragStart={(e) => {
+                setDragIndex(i);
+                // Firefox refuses to start a drag unless data is set, and
+                // some browsers show a copy cursor without effectAllowed.
+                e.dataTransfer?.setData('text/plain', String(i));
+                if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
+              }}
+              onDragEnd={endDrag}
+            >
+              ⠿
+            </span>
             <input
               type="text"
               aria-label={`Tab ${i + 1} label`}
@@ -136,12 +195,18 @@ export function TabManager({ tabs, onSaved }: Props) {
                 Delete “{row.label}” and its content?
               </button>
             ) : (
+              // Icon-only: aria-label is what names it, since the glyph is
+              // aria-hidden. The CONFIRM step above stays full text on
+              // purpose — an icon is fine for arming a delete, but the step
+              // that actually discards a tab's content should say so in words.
               <button
                 type="button"
+                className="tab-manager-remove"
                 aria-label={`Remove ${row.label}`}
+                title={`Remove ${row.label}`}
                 onClick={() => setArmedDeleteId(row.id)}
               >
-                Remove
+                {TRASH_ICON}
               </button>
             )}
           </li>
