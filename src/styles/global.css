@@ -192,11 +192,83 @@ a.meta-item:hover {
 .tabs .wrap {
   display: flex;
   gap: 2px;
+  /* Containing block for the overlaid arrows below. */
+  position: relative;
+}
+/* The scroller. Its hidden scrollbar is why the arrows exist at all: without
+   them, tabs past the right edge were reachable only by guessing they were
+   there. It spans the full content width — nothing is allowed to inset it —
+   so the first and last tab line up with every other `.wrap` on the page. */
+.tab-strip {
+  display: flex;
+  gap: 2px;
+  flex: 1 1 auto;
+  min-width: 0;
   overflow-x: auto;
   scrollbar-width: none;
 }
-.tabs .wrap::-webkit-scrollbar {
+.tab-strip::-webkit-scrollbar {
   display: none;
+}
+/* Overlaid on the strip's edges rather than sitting in flow beside it. An
+   arrow that occupied a flex slot indented the first tab out of line with the
+   page's content column and went on doing so while hidden, since a hidden
+   flex item still reserves its space. Taken out of flow it costs no width in
+   either state, which also means appearing and disappearing can never reflow
+   the strip — the reason the in-flow version kept the slot in the first place.
+
+   `left`/`right: 0` is the padding-box edge, so each chevron sits in `.wrap`'s
+   own gutter and clears the tab text entirely; only the gradient tail reaches
+   over the strip. The gradient repeats `.tabs`' own background rather than
+   introducing a colour: an opaque patch would read as a lighter block against
+   the translucent, backdrop-blurred bar. */
+.tab-scroll {
+  appearance: none;
+  border: none;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 40px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  padding: 0;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+.tab-scroll-prev {
+  left: 0;
+  justify-content: flex-start;
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0.96) 55%,
+    rgba(255, 255, 255, 0)
+  );
+}
+.tab-scroll-next {
+  right: 0;
+  justify-content: flex-end;
+  background: linear-gradient(
+    to left,
+    rgba(255, 255, 255, 0.96) 55%,
+    rgba(255, 255, 255, 0)
+  );
+}
+.tab-scroll:hover {
+  color: var(--color-primary-default);
+}
+/* The direction with nothing left to scroll to. `visibility: hidden` rather
+   than unmounting: it costs nothing now that the arrows are out of flow, and
+   it is what makes the slot unreachable rather than merely inert — the element
+   keeps `tabIndex` 0, but the browser refuses to focus it at all (verified in
+   Chrome: an explicit `.focus()` on the hidden arrow is a no-op, while the
+   visible one takes focus), so keyboard users never land on a control that
+   does nothing. `pointer-events: none` lets clicks through to the tab
+   underneath. */
+.tab-scroll[data-inert] {
+  visibility: hidden;
+  pointer-events: none;
 }
 .tab-btn {
   appearance: none;
