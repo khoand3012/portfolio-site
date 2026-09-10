@@ -88,15 +88,15 @@ export function TabStrip({ tabs, activeSlug, onSelect }: Props) {
   return (
     <nav className="tabs">
       <div className="wrap">
-        {/* Both arrows render, or neither does. Keeping the exhausted one in
-            flow (hidden, not removed) is what stops the strip from changing
-            width mid-scroll and shoving the tabs sideways under the cursor,
-            and the `visibility: hidden` behind `[data-inert]` is what keeps
-            it off-limits to the keyboard — see the rule in global.css. */}
+        {/* Both arrows render, or neither does. They are overlaid on the
+            strip's edges rather than placed beside it, so they take no width
+            in either state and the first and last tab stay aligned with the
+            rest of the page — see `.tab-scroll` in global.css, which also
+            explains why the exhausted one is hidden rather than unmounted. */}
         {overflows && (
           <button
             type="button"
-            className="tab-scroll"
+            className="tab-scroll tab-scroll-prev"
             // Icon-only, so it carries its own accessible name — the glyph is
             // aria-hidden, matching every other icon button here.
             aria-label="Scroll tabs left"
@@ -125,7 +125,7 @@ export function TabStrip({ tabs, activeSlug, onSelect }: Props) {
         {overflows && (
           <button
             type="button"
-            className="tab-scroll"
+            className="tab-scroll tab-scroll-next"
             aria-label="Scroll tabs right"
             data-inert={!canScrollRight || undefined}
             onClick={() => scroll(1)}
