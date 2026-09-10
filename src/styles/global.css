@@ -192,11 +192,53 @@ a.meta-item:hover {
 .tabs .wrap {
   display: flex;
   gap: 2px;
+}
+/* The scroller. Its hidden scrollbar is why the arrows exist at all: without
+   them, tabs past the right edge were reachable only by guessing they were
+   there. `min-width: 0` is load-bearing — a flex item defaults to
+   `min-width: auto`, which refuses to shrink below its content and would push
+   the arrows off the edge instead of scrolling. */
+.tab-strip {
+  display: flex;
+  gap: 2px;
+  flex: 1 1 auto;
+  min-width: 0;
   overflow-x: auto;
   scrollbar-width: none;
 }
-.tabs .wrap::-webkit-scrollbar {
+.tab-strip::-webkit-scrollbar {
   display: none;
+}
+/* `flex-shrink: 0` so the arrows keep their width at narrow viewports rather
+   than being squeezed to nothing by the scroller beside them. */
+.tab-scroll {
+  appearance: none;
+  border: none;
+  background: transparent;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--spacing-sm);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease;
+}
+.tab-scroll:hover {
+  color: var(--color-primary-default);
+  background: var(--color-bg-surface);
+}
+/* The direction that has nothing left to scroll to. Hidden rather than
+   removed, so the strip's width does not change mid-scroll and shove the tabs
+   sideways under the cursor. `visibility: hidden` is also what makes it
+   unreachable rather than merely inert: the element keeps `tabIndex` 0, but
+   the browser refuses to focus it at all (verified in Chrome — an explicit
+   `.focus()` on the hidden arrow is a no-op, while the visible one takes
+   focus), so keyboard users never land on a control that does nothing. */
+.tab-scroll[data-inert] {
+  visibility: hidden;
+  pointer-events: none;
 }
 .tab-btn {
   appearance: none;

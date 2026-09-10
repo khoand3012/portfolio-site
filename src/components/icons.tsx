@@ -57,3 +57,10 @@ export const TRASH_ICON = icon(
   </>,
   15,
 );
+
+// The tab strip's scroll arrows. Sized to match CLOSE_ICON rather than the
+// 14px default: they sit beside 13.5px tab labels and read as undersized at
+// the smaller size.
+export const CHEVRON_LEFT_ICON = icon(<path d="m15 18-6-6 6-6" />, 16);
+
+export const CHEVRON_RIGHT_ICON = icon(<path d="m9 18 6-6-6-6" />, 16);

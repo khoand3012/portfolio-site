@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import type { Block } from '../types';
 import { BlockRenderer } from './BlockRenderer';
+import { TabStrip } from './TabStrip';
 
 interface Tab {
   slug: string;
@@ -19,20 +20,10 @@ export function TabbedContent({ tabs }: Props) {
 
   return (
     <>
-      <nav className="tabs">
-        <div className="wrap">
-          {tabs.map((tab) => (
-            <button
-              key={tab.slug}
-              type="button"
-              className={`tab-btn${tab.slug === activeSlug ? ' active' : ''}`}
-              onClick={() => setActiveSlug(tab.slug)}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-      </nav>
+      {/* The strip owns its own horizontal scrolling and the arrows that go
+          with it; this component stays responsible for which tab is active
+          and for the panels below. */}
+      <TabStrip tabs={tabs} activeSlug={activeSlug} onSelect={setActiveSlug} />
 
       <main>
         <div className="wrap">
