@@ -5,7 +5,7 @@ import { Button, Puck } from '@puckeditor/core';
 import { createAiPlugin } from '@puckeditor/plugin-ai';
 import { useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { saveTabBlocksAction } from '../../app/admin/actions';
 import { puckConfig } from '../../puck.config';
 import { hasUnpublishedEdits } from '../lib/draftState';
@@ -21,6 +21,15 @@ import { Toaster } from './Toaster';
 // invented example prompts read as first-party product copy and should only
 // ever be authored by the site owner, not generated.
 const aiPlugin = createAiPlugin();
+// Module scope, not an inline `plugins={[aiPlugin]}` literal: <Puck> memoizes
+// its merged overrides on the identity of `plugins` and `overrides`, then
+// reads `overrides.preview` as a component TYPE. A fresh array here re-mints
+// that component on every parent render, and React responds by unmounting and
+// remounting the whole preview subtree, iframe and all — which shows up as the
+// entire canvas flashing on every keystroke. Keep this stable, and see the
+// `overrides` memo below: the two are one fix, and re-inlining either one
+// brings the flash back on its own.
+const puckPlugins = [aiPlugin];
 
 interface Props {
   initialData: PortfolioData;
@@ -189,31 +198,37 @@ export function PuckAdmin({ initialData, userEmail }: Props) {
   // Rendered inside <Puck>, so PreviewToggle can reach Puck's own store. Puck
   // hands us its existing actions (the Publish button) as `children`; ours sit
   // before it so Publish stays the last, primary action.
-  const headerActions = ({ children }: { children: ReactNode }) => (
-    <>
-      {/* Opens the live public page in a new tab. Note this shows PUBLISHED
+  const headerActions = useCallback(
+    ({ children }: { children: ReactNode }) => (
+      <>
+        {/* Opens the live public page in a new tab. Note this shows PUBLISHED
           content — unpublished edits in this editor will not appear there
           until they are published. */}
-      <Button variant="secondary" icon={PREVIEW_ICON} href="/" newTab>
-        Preview
-      </Button>
-      <Button
-        variant="secondary"
-        icon={HERO_ICON}
-        onClick={() => setPanel('hero')}
-      >
-        Edit hero
-      </Button>
-      <Button
-        variant="secondary"
-        icon={TABS_ICON}
-        onClick={() => setPanel('tabs')}
-      >
-        Manage tabs
-      </Button>
-      {children}
-    </>
+        <Button variant="secondary" icon={PREVIEW_ICON} href="/" newTab>
+          Preview
+        </Button>
+        <Button
+          variant="secondary"
+          icon={HERO_ICON}
+          onClick={() => setPanel('hero')}
+        >
+          Edit hero
+        </Button>
+        <Button
+          variant="secondary"
+          icon={TABS_ICON}
+          onClick={() => setPanel('tabs')}
+        >
+          Manage tabs
+        </Button>
+        {children}
+      </>
+    ),
+    [],
   );
+  // Stable identity for the same reason `puckPlugins` is hoisted above — this
+  // object is the other half of <Puck>'s overrides memo key.
+  const overrides = useMemo(() => ({ headerActions }), [headerActions]);
 
   return (
     <div>
@@ -261,8 +276,8 @@ export function PuckAdmin({ initialData, userEmail }: Props) {
           data={drafts[activeTab.id] ?? blocksToPuckData(activeTab.blocks)}
           onChange={handleEditorChange}
           onPublish={handlePublish}
-          plugins={[aiPlugin]}
-          overrides={{ headerActions }}
+          plugins={puckPlugins}
+          overrides={overrides}
           height="calc(100dvh - 3rem)"
         />
       ) : (
