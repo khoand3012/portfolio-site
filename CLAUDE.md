@@ -176,6 +176,30 @@ the others could be bypassed, so don't "simplify" this down to fewer checks:
    needs to be blocked before it reaches Puck's API, not just before it
    can write anything.
 
+All five consult one shared predicate, `isAdminAuthBypassed()` in
+`src/lib/adminAccess.ts`, which opens the panel for local development. That
+is a shared *predicate*, not a shared wrapper — each layer still owns its own
+check, and point 4 above still holds for any new server action. The bypass
+fires only when `DISABLE_ADMIN_AUTH === 'true'` **and**
+`NODE_ENV !== 'production'`; both halves are load-bearing and neither should
+be dropped:
+
+- Without the explicit env var, `NODE_ENV` alone would be satisfied by
+  `NODE_ENV=test`, disabling auth inside this repo's own vitest run and making
+  the `'Not authorized.'` assertions in `app/admin/actions.test.ts` pass
+  vacuously. `src/lib/adminAccess.test.ts` pins this.
+- Without the `NODE_ENV` half, the variable leaking into Netlify's
+  environment would open the deployed panel.
+
+At each of the five sites the bypass short-circuits **before** `auth()` is
+called, never after. That ordering is deliberate: Auth.js throws when
+`AUTH_SECRET` is missing, which is exactly the state of a machine running with
+OAuth disabled, so a bypass checked after the `auth()` call would throw before
+it was ever consulted. In `middleware.ts` this means swapping the whole
+`auth()`-wrapped handler for a no-op at module scope rather than returning
+early inside the callback — by the time that callback body runs, Auth.js has
+already tried to resolve `req.auth`.
+
 **The editor:** `puck.config.tsx` (repo root) maps this app's generic block
 components (`Heading`, `Text`, `Bullets`, `Badge`, etc., plus `Container`
 and its scaffolding presets `EntryCard`/`BadgeRow`/`MediaGrid`) to

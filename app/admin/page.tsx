@@ -3,6 +3,7 @@ import '@puckeditor/plugin-ai/styles.css';
 import { redirect } from 'next/navigation';
 import { auth } from '../../auth';
 import { PuckAdmin } from '../../src/components/PuckAdmin';
+import { isAdminAuthBypassed } from '../../src/lib/adminAccess';
 import { isAllowedEmail } from '../../src/lib/allowedEmails';
 import { getPortfolioContent } from '../../src/lib/portfolioContent';
 
@@ -15,7 +16,12 @@ import { getPortfolioContent } from '../../src/lib/portfolioContent';
 export const dynamic = 'force-dynamic';
 
 export default async function AdminPage() {
-  const session = await auth();
+  // Local-dev bypass (see src/lib/adminAccess.ts). `auth()` is skipped
+  // entirely rather than called-then-ignored, because it throws when
+  // AUTH_SECRET is unset. PuckAdmin already tolerates a null userEmail — it
+  // just skips the "Signed in as" toast.
+  const bypassed = isAdminAuthBypassed();
+  const session = bypassed ? null : await auth();
 
   // Defense in depth: middleware already gates '/admin' at the routing layer,
   // but this page must not trust that alone — re-check the session and the
@@ -24,7 +30,10 @@ export default async function AdminPage() {
   // this project's Global Constraint: admin/editing routes must be gated by
   // a valid, allow-listed session checked server-side, not just hidden in
   // the UI.
-  if (!isAllowedEmail(session?.user?.email, process.env.ALLOWED_EMAILS)) {
+  if (
+    !bypassed &&
+    !isAllowedEmail(session?.user?.email, process.env.ALLOWED_EMAILS)
+  ) {
     redirect('/api/auth/signin');
   }
 

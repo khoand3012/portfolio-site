@@ -1,6 +1,7 @@
 'use server';
 
 import { auth } from '../../auth';
+import { isAdminAuthBypassed } from '../../src/lib/adminAccess';
 import { isAllowedEmail } from '../../src/lib/allowedEmails';
 import { SaveConflictError } from '../../src/lib/blobStore';
 import {
@@ -199,11 +200,15 @@ export async function saveTabBlocksAction(
   tabId: string,
   blocks: Block[],
 ): Promise<Block[]> {
-  const session = await auth();
   // Re-check server-side even though middleware already gates /admin — this
   // action can in principle be invoked directly, so it must not trust the UI.
-  if (!isAllowedEmail(session?.user?.email, process.env.ALLOWED_EMAILS)) {
-    throw new Error('Not authorized.');
+  // Skipped wholesale under the local-dev bypass (src/lib/adminAccess.ts),
+  // which also avoids calling auth() at all — it throws with no AUTH_SECRET.
+  if (!isAdminAuthBypassed()) {
+    const session = await auth();
+    if (!isAllowedEmail(session?.user?.email, process.env.ALLOWED_EMAILS)) {
+      throw new Error('Not authorized.');
+    }
   }
   if (typeof tabId !== 'string' || tabId.length === 0) {
     throw new Error('Invalid content shape: missing tab id');
@@ -300,11 +305,15 @@ function assertTabMetasShape(data: unknown): asserts data is TabMeta[] {
 // something the client can sequence against, which is why a published rename
 // or new tab could sit invisible until a manual reload.
 export async function saveTabsAction(metas: TabMeta[]): Promise<Tab[]> {
-  const session = await auth();
   // Re-checked server-side for the same reason as every other action here:
   // a server action can be invoked directly, so it must not trust the UI.
-  if (!isAllowedEmail(session?.user?.email, process.env.ALLOWED_EMAILS)) {
-    throw new Error('Not authorized.');
+  // Skipped wholesale under the local-dev bypass (src/lib/adminAccess.ts),
+  // which also avoids calling auth() at all — it throws with no AUTH_SECRET.
+  if (!isAdminAuthBypassed()) {
+    const session = await auth();
+    if (!isAllowedEmail(session?.user?.email, process.env.ALLOWED_EMAILS)) {
+      throw new Error('Not authorized.');
+    }
   }
   assertTabMetasShape(metas);
 
@@ -372,11 +381,15 @@ function assertHeroShape(data: unknown): asserts data is Hero {
 // Returns the saved hero for the same reason saveTabsAction returns its tabs:
 // the shell updates from the value the server actually stored.
 export async function saveHeroAction(hero: Hero): Promise<Hero> {
-  const session = await auth();
   // Re-checked server-side for the same reason as every other action here:
   // a server action can be invoked directly, so it must not trust the UI.
-  if (!isAllowedEmail(session?.user?.email, process.env.ALLOWED_EMAILS)) {
-    throw new Error('Not authorized.');
+  // Skipped wholesale under the local-dev bypass (src/lib/adminAccess.ts),
+  // which also avoids calling auth() at all — it throws with no AUTH_SECRET.
+  if (!isAdminAuthBypassed()) {
+    const session = await auth();
+    if (!isAllowedEmail(session?.user?.email, process.env.ALLOWED_EMAILS)) {
+      throw new Error('Not authorized.');
+    }
   }
   assertHeroShape(hero);
 

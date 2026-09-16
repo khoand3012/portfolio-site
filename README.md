@@ -80,6 +80,24 @@ the full design rationale.
 | `AUTH_SECRET` | Random secret Auth.js uses to sign sessions (`openssl rand -base64 32` or equivalent). `NEXTAUTH_SECRET` also works as a legacy-compatible alias. |
 | `PUCK_API_KEY` | From a [Puck Cloud](https://cloud.puckeditor.com/api-keys) account. Only needed for the Puck AI chat panel — drag-and-drop editing and saving work without it. |
 
+**Skipping OAuth in local development.** Setting `DISABLE_ADMIN_AUTH=true`
+bypasses the sign-in gate on `/admin`, so you can work on the editor without
+provisioning a Google OAuth client at all — with it set, none of
+`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `ALLOWED_EMAILS` or `AUTH_SECRET`
+are needed to reach the panel.
+
+The flag is deliberately inert unless **both** it is set to exactly `true`
+**and** `NODE_ENV !== 'production'`, so it cannot open up a production build
+even if the variable leaks into Netlify's environment. Requiring the explicit
+opt-in (rather than keying off `NODE_ENV` alone) also keeps `npm run test`
+gated: vitest runs with `NODE_ENV=test`, and a `NODE_ENV`-only check would
+silently disable auth inside this repo's own test suite. See
+`src/lib/adminAccess.ts`.
+
+Two caveats while the flag is on: `/admin` is open to anything that can reach
+your dev server, and `/api/puck` — which spends the Puck Cloud account's
+metered AI credit — is open along with it.
+
 `auth.ts` hardcodes `trustHost: true` (Netlify isn't on Auth.js's short list
 of platforms it auto-trusts the `Host` header for by default, so without
 this Auth.js would reject every request as an untrusted host in
@@ -163,6 +181,7 @@ npm run lint:fix     # apply safe fixes + formatting
 │   │   ├── sanitizeBlocks.ts      Strips rich-text HTML to an allow-list at save time
 │   │   ├── layoutOptions.ts       The allowed container layout values — one source of truth
 │   │   ├── tabSlugs.ts            Derives readable DOM ids from tab labels
+│   │   ├── adminAccess.ts        Local-dev auth bypass flag (DISABLE_ADMIN_AUTH)
 │   │   ├── allowedEmails.ts       Email allow-list check (ALLOWED_EMAILS)
 │   │   └── puckAdapter.ts         Block[] <-> Puck data format conversion
 │   ├── styles/

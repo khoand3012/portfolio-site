@@ -1,5 +1,6 @@
 import { puckHandler } from '@puckeditor/cloud-client';
 import { auth } from '../../../../auth';
+import { isAdminAuthBypassed } from '../../../../src/lib/adminAccess';
 import { isAllowedEmail } from '../../../../src/lib/allowedEmails';
 
 // Content-fidelity guardrail (prompt-level, not a hard technical block — see
@@ -19,9 +20,16 @@ async function handleRequest(request: Request) {
   // '/api/puck' at the routing layer, but this handler must not trust that
   // alone — it also spends the Puck Cloud account's metered AI credit, so an
   // open route would let anyone run up the bill even before touching content.
-  const session = await auth();
-  if (!isAllowedEmail(session?.user?.email, process.env.ALLOWED_EMAILS)) {
-    return new Response('Not authorized', { status: 403 });
+  //
+  // The local-dev bypass (src/lib/adminAccess.ts) applies here too, so Puck
+  // AI still works with OAuth off — but note this route is the one that
+  // spends real metered Puck Cloud credit, so with the flag on, anything
+  // that can reach the dev server can spend it.
+  if (!isAdminAuthBypassed()) {
+    const session = await auth();
+    if (!isAllowedEmail(session?.user?.email, process.env.ALLOWED_EMAILS)) {
+      return new Response('Not authorized', { status: 403 });
+    }
   }
 
   // No `model`/`providerApiKey` here: Claude/Anthropic BYOK was researched
