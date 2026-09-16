@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PortfolioData } from '../../src/types';
 
 vi.mock('../../auth', () => ({ auth: vi.fn() }));
@@ -427,5 +427,61 @@ describe('saveHeroAction', () => {
       new Error('store is down'),
     );
     await expect(saveHeroAction(validHero)).rejects.toThrow('store is down');
+  });
+});
+
+describe('local-dev auth bypass (DISABLE_ADMIN_AUTH)', () => {
+  // These actions are the layer where the bypass has to do more than let a
+  // request through: they read-modify-write the content store, so the point
+  // of the flag is that a *save* still completes with no session at all.
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.stubEnv('DISABLE_ADMIN_AUTH', 'true');
+    // No session and no allow-list — the state of a machine running with
+    // OAuth switched off entirely.
+    vi.mocked(auth).mockResolvedValue(null as never);
+    process.env.ALLOWED_EMAILS = undefined as never;
+    vi.mocked(readPortfolioContentWithEtag).mockResolvedValue({
+      data: fixtureContent(),
+      etag: 'etag-1',
+    });
+    vi.mocked(savePortfolioContent).mockResolvedValue(undefined);
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('lets saveTabBlocksAction write with no session', async () => {
+    await expect(saveTabBlocksAction('teaching', [])).resolves.toEqual([]);
+    expect(savePortfolioContent).toHaveBeenCalledTimes(1);
+  });
+
+  it('lets saveTabsAction write with no session', async () => {
+    await expect(
+      saveTabsAction([{ id: 'teaching', label: 'Teaching' }]),
+    ).resolves.toEqual([{ id: 'teaching', label: 'Teaching', blocks: [] }]);
+    expect(savePortfolioContent).toHaveBeenCalledTimes(1);
+  });
+
+  it('lets saveHeroAction write with no session', async () => {
+    const hero = {
+      name: 'Test',
+      initials: 'T',
+      role: 'Role',
+      profile: 'Profile',
+    };
+    await expect(saveHeroAction(hero)).resolves.toEqual(hero);
+    expect(savePortfolioContent).toHaveBeenCalledTimes(1);
+  });
+
+  it('never calls auth() at all, so a missing AUTH_SECRET cannot throw', async () => {
+    await saveHeroAction({
+      name: 'Test',
+      initials: 'T',
+      role: 'Role',
+      profile: 'Profile',
+    });
+    expect(auth).not.toHaveBeenCalled();
   });
 });

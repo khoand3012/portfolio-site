@@ -176,6 +176,30 @@ the others could be bypassed, so don't "simplify" this down to fewer checks:
    needs to be blocked before it reaches Puck's API, not just before it
    can write anything.
 
+All five consult one shared predicate, `isAdminAuthBypassed()` in
+`src/lib/adminAccess.ts`, which opens the panel for local development. That
+is a shared *predicate*, not a shared wrapper — each layer still owns its own
+check, and point 4 above still holds for any new server action. The bypass
+fires only when `DISABLE_ADMIN_AUTH === 'true'` **and**
+`NODE_ENV !== 'production'`; both halves are load-bearing and neither should
+be dropped:
+
+- Without the explicit env var, `NODE_ENV` alone would be satisfied by
+  `NODE_ENV=test`, disabling auth inside this repo's own vitest run and making
+  the `'Not authorized.'` assertions in `app/admin/actions.test.ts` pass
+  vacuously. `src/lib/adminAccess.test.ts` pins this.
+- Without the `NODE_ENV` half, the variable leaking into Netlify's
+  environment would open the deployed panel.
+
+At each of the five sites the bypass short-circuits **before** `auth()` is
+called, never after. That ordering is deliberate: Auth.js throws when
+`AUTH_SECRET` is missing, which is exactly the state of a machine running with
+OAuth disabled, so a bypass checked after the `auth()` call would throw before
+it was ever consulted. In `middleware.ts` this means swapping the whole
+`auth()`-wrapped handler for a no-op at module scope rather than returning
+early inside the callback — by the time that callback body runs, Auth.js has
+already tried to resolve `req.auth`.
+
 **The editor:** `puck.config.tsx` (repo root) maps this app's generic block
 components (`Heading`, `Text`, `Bullets`, `Badge`, etc., plus `Container`
 and its scaffolding presets `EntryCard`/`BadgeRow`/`MediaGrid`) to
@@ -281,17 +305,38 @@ now.)
 
 ## Design tokens are fixed
 
-The color palette (a warm cream/gold/amber/rust/brown "sand" scale, defined
-as `--sand-100` through `--sand-900` CSS custom properties in
-`src/styles/global.css`, replacing an earlier navy/graphite/mint palette) was
-an explicit, deliberate choice by the site owner. Don't change the hex
-values as a side effect of an unrelated change — if a task calls for new UI,
-reuse the existing `--sand-*` primitives or the semantic `--color-*` tokens
-built on them rather than introducing new colors.
+The color palette (a coastal cream/aqua/blue/navy "tide" scale, defined as
+`--tide-100` through `--tide-900` CSS custom properties in
+`src/styles/global.css`, replacing the earlier warm "sand" scale, which had
+itself replaced a navy/graphite/mint palette) was an explicit, deliberate
+choice by the site owner, who supplied the source colors `#F2EFE7`,
+`#C8DFDB`, `#66A3BF` and `#3368A0` directly. Don't change the hex values as
+a side effect of an unrelated change — if a task calls for new UI, reuse the
+existing `--tide-*` primitives or the semantic `--color-*` tokens built on
+them rather than introducing new colors.
 
-Note `--color-text-secondary` intentionally equals `--color-text-primary`
-(both full-strength `--sand-900`) rather than a lighter/muted variant — any
-lower-opacity blend toward the cream `--sand-100` page background drops
-below WCAG AA's 4.5:1 contrast minimum for body text (verified: 90% brown
-measures 4.58:1, 75% measures 3.38:1, already failing). Convey text
-hierarchy with font-size/weight, not a lighter shade of this palette.
+Two of the six stops are derived rather than given, and both derivations are
+load-bearing — the inline comments in `global.css` carry the measured
+numbers, but the reasoning is:
+
+- `--tide-200` exists because the owner nominated two background colors while
+  the stylesheet needs three background levels (page, raised surface, card).
+  The obvious fill-in — using `--tide-500` (`#66A3BF`) as the surface level —
+  fails WCAG AA: accent-colored links on it measure 2.35:1. **`#66A3BF` is an
+  accent in this palette, never a background for text.** It is also why it
+  can't be the avatar ring: the hero is a `--tide-900` → `--tide-700`
+  gradient, and `#66A3BF` drops to 2.35:1 against that gradient's light end.
+- `--tide-700` is the owner's `#3368A0` darkened ~8% to `#2F6093`. It's the
+  stop used for link text, and at the original value links on the `--tide-300`
+  card background measure 4.14:1, just under AA's 4.5:1 for body text.
+
+Unlike the sand scale, this palette **does** support a distinct
+`--color-text-secondary` (`#38556B`) — the old note pinning it equal to
+`--color-text-primary` was a constraint of the cream/brown scale, not a
+design preference, and it no longer applies. Don't lighten it further
+though: the same blend one step lighter measures 4.34:1 on `--tide-300` and
+fails AA.
+
+When changing any of these values, re-measure every foreground/background
+pairing the stylesheet actually produces — including both ends of the hero
+gradient, which is the pairing most easily missed.

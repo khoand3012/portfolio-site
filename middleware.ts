@@ -1,4 +1,5 @@
 import { auth } from './auth';
+import { isAdminAuthBypassed } from './src/lib/adminAccess';
 
 // This file deliberately does NOT export `runtime = 'nodejs'`. At the
 // installed next@15.5.23, middleware runs in the Edge Runtime by default;
@@ -37,7 +38,7 @@ import { auth } from './auth';
 // /admin and /api/puck. See
 // .superpowers/sdd/2026-08-20-nextjs-puck-admin-panel/task-20-edge-runtime-report.md
 // for the full investigation.
-export default auth((req) => {
+const gate = auth((req) => {
   const isProtected =
     req.nextUrl.pathname.startsWith('/admin') ||
     req.nextUrl.pathname.startsWith('/api/puck');
@@ -46,6 +47,18 @@ export default auth((req) => {
     return Response.redirect(signInUrl);
   }
 });
+
+// Local-dev bypass (see src/lib/adminAccess.ts). The swap happens *outside*
+// the `auth()` wrapper rather than as an early return inside the callback:
+// by the time that callback runs, Auth.js has already tried to resolve
+// `req.auth`, which throws when AUTH_SECRET is unset — precisely the
+// situation someone disabling OAuth locally is in. Returning a no-op
+// middleware instead means the Auth.js request path is never entered at all.
+export default isAdminAuthBypassed()
+  ? () => {
+      return;
+    }
+  : gate;
 
 export const config = {
   // The brief's draft used only '/admin/:path*', which does NOT match the bare

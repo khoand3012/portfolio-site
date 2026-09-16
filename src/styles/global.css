@@ -1,34 +1,54 @@
 :root {
-  /* Primitives — warm sand palette (cream / gold / amber / rust / brown) */
-  --sand-100: #f5e0b3;
-  --sand-300: #f2c94c;
-  --sand-500: #e8a54a;
-  --sand-700: #d77d2b;
-  --sand-900: #7a4b2b;
+  /* Primitives — coastal palette (cream / aqua / mid-blue / deep blue / navy),
+     replacing the earlier warm sand scale. Built from the site owner's four
+     chosen colors: #F2EFE7, #C8DFDB, #66A3BF, #3368A0 — three are used
+     verbatim; the two notes below explain the derived stops and why they
+     exist. Every foreground/background pairing the stylesheet actually
+     produces was measured against WCAG AA before these values were set. */
+  --tide-100: #f2efe7; /* owner's cream — page background, text on dark */
+  /* Derived (midpoint of --tide-100 and --tide-300). The owner nominated two
+     background colors, but the stylesheet needs three distinct background
+     levels — page, raised surface (tags, gallery tiles, the active tab), and
+     card. Using --tide-500 for the surface level instead would put body text
+     on #66A3BF at 4.73:1 and accent-colored links on it at 2.35:1, failing
+     AA — which is also why #66A3BF is an accent here, never a text
+     background. */
+  --tide-200: #dde7e1;
+  --tide-300: #c8dfdb; /* owner's aqua — card/content background */
+  --tide-500: #66a3bf; /* owner's mid blue — decorative borders and accents */
+  /* The owner's #3368A0, darkened ~8%. At the original value, link text on
+     the --tide-300 card background measures 4.14:1 — just under AA's 4.5:1
+     for body text. This stop is the one the stylesheet uses for link text, so
+     it has to clear that bar; at #2F6093 the same pairing measures 4.68:1.
+     The undarkened #3368A0 remains accurate anywhere it isn't text. */
+  --tide-700: #2f6093;
+  --tide-800: #38556b; /* derived — muted navy for secondary text (see below) */
+  --tide-900: #14324f; /* derived deep navy — body text, inverse surfaces */
 
   /* Semantic */
-  --color-bg-page: var(--sand-100);
-  --color-bg-content: var(--sand-300);
-  --color-bg-surface: var(--sand-500);
-  --color-bg-inverse: var(--sand-900);
-  --color-bg-accent-subtle: var(--sand-300);
-  --color-text-primary: var(--sand-900);
-  /* Full-strength brown, same as text-primary: at any lower opacity this
-     drops below WCAG AA's 4.5:1 body-text minimum against the cream page
-     background (verified — 90% brown blended toward cream measures
-     4.58:1, 75% measures 3.38:1, already failing). Hierarchy for
-     lower-emphasis text comes from font-size/weight elsewhere, not a
-     lighter color, because the palette doesn't have a second shade that's
-     both distinct from full brown and still legible on cream. */
-  --color-text-secondary: var(--sand-900);
-  --color-text-inverse: var(--sand-100);
-  --color-text-on-accent: var(--sand-100);
-  --color-border-default: var(--sand-500);
-  --color-border-strong: var(--sand-700);
-  --color-primary-default: var(--sand-900);
-  --color-primary-hover: var(--sand-700);
-  --color-accent-default: var(--sand-700);
-  --color-accent-hover: var(--sand-900);
+  --color-bg-page: var(--tide-100);
+  --color-bg-content: var(--tide-300);
+  --color-bg-surface: var(--tide-200);
+  --color-bg-inverse: var(--tide-900);
+  --color-bg-accent-subtle: var(--tide-300);
+  --color-text-primary: var(--tide-900);
+  /* Unlike the sand palette this replaces, this one has room for a genuinely
+     lighter secondary tone: the old scale had no shade both distinct from the
+     body color and still legible on cream, so this token was pinned equal to
+     --color-text-primary. --tide-800 is --tide-900 at 80% toward the card
+     background, and measures 5.61:1 on --tide-300 (the tightest of the three
+     backgrounds), 6.19:1 on --tide-200 and 6.82:1 on --tide-100 — all clear
+     of AA's 4.5:1. Don't lighten it further: the same blend at 70% drops to
+     4.34:1 on --tide-300 and fails. */
+  --color-text-secondary: var(--tide-800);
+  --color-text-inverse: var(--tide-100);
+  --color-text-on-accent: var(--tide-100);
+  --color-border-default: var(--tide-500);
+  --color-border-strong: var(--tide-700);
+  --color-primary-default: var(--tide-900);
+  --color-primary-hover: var(--tide-700);
+  --color-accent-default: var(--tide-700);
+  --color-accent-hover: var(--tide-900);
 
   /* Typography */
   --font-headline: "Source Serif 4", Georgia, "Times New Roman", serif;
@@ -81,7 +101,7 @@ a {
 /* Hero */
 .hero {
   position: relative;
-  background: linear-gradient(155deg, var(--sand-900) 0%, var(--sand-700) 100%);
+  background: linear-gradient(155deg, var(--tide-900) 0%, var(--tide-700) 100%);
   color: var(--color-text-inverse);
   padding: var(--spacing-3xl) 0 var(--spacing-2xl);
   overflow: hidden;
@@ -119,16 +139,16 @@ a {
 .hero .role {
   font-size: 17px;
   font-weight: 500;
-  color: var(--sand-100);
+  color: var(--tide-100);
   margin: 0 0 var(--spacing-md);
 }
 /* Sits directly under .role, so hierarchy comes from size/weight — not a
-   lighter shade of --sand-100, which is already this block's dimmest legible
+   lighter shade of --tide-100, which is already this block's dimmest legible
    tone against the hero's dark background. */
 .credential {
   font-size: 13px;
   font-weight: 400;
-  color: var(--sand-100);
+  color: var(--tide-100);
   margin: calc(-1 * var(--spacing-sm)) 0 var(--spacing-md);
 }
 .avatar {
@@ -137,14 +157,14 @@ a {
   height: 76px;
   border-radius: var(--radius-full);
   background: rgba(255, 255, 255, 0.06);
-  border: 1.5px solid var(--sand-300);
+  border: 1.5px solid var(--tide-300);
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: var(--font-headline);
   font-size: 22px;
   font-weight: 700;
-  color: var(--sand-100);
+  color: var(--tide-100);
   letter-spacing: 0.5px;
 }
 .meta-row {
@@ -158,23 +178,23 @@ a {
   align-items: center;
   gap: 7px;
   font-size: 13.5px;
-  color: var(--sand-100);
+  color: var(--tide-100);
   text-decoration: none;
 }
 a.meta-item:hover {
-  color: var(--sand-300);
+  color: var(--tide-300);
   text-decoration: underline;
 }
 .meta-item svg {
   width: 14px;
   height: 14px;
-  color: var(--sand-300);
+  color: var(--tide-300);
   flex-shrink: 0;
 }
 .hero .profile {
   font-size: 15.5px;
   line-height: 1.65;
-  color: var(--sand-100);
+  color: var(--tide-100);
   max-width: 660px;
   margin: 0;
 }
@@ -508,7 +528,7 @@ footer::before {
   color: var(--color-text-secondary);
 }
 .toast-destructive .toast-description {
-  color: var(--sand-100);
+  color: var(--tide-100);
 }
 
 .toast-close {
@@ -529,7 +549,7 @@ footer::before {
   background: var(--color-bg-surface);
 }
 .toast-destructive .toast-close:hover {
-  background: var(--sand-700);
+  background: var(--tide-700);
 }
 
 .toast-action {
