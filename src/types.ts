@@ -12,7 +12,20 @@ import type {
 
 export interface Hero {
   name: string;
-  initials: string;
+  /**
+   * Legacy field, retained only so documents saved before the avatar work
+   * still validate. Nothing reads it: the avatar's text fallback is derived
+   * from `name` at render time (src/lib/initials.ts), and `/admin` no longer
+   * offers it as an input, so it decays on the owner's next hero save.
+   */
+  initials?: string;
+  /**
+   * Uploaded avatar image. Either a relative `/api/media/<uuid>.<ext>` path
+   * served by app/api/media, or an absolute http(s) URL the owner pasted.
+   * Validated at the save boundary by isSafeAvatarUrl (src/lib/avatarUrl.ts)
+   * — never rendered as a src without passing that check.
+   */
+  avatarUrl?: string;
   role: string;
   phone?: string;
   email?: string;
@@ -20,6 +33,7 @@ export interface Hero {
   location?: string;
   dob?: string;
   credential?: string;
+  /** May be an empty string — the owner is not required to write a profile. */
   profile: string;
 }
 

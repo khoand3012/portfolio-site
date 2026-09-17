@@ -3,6 +3,7 @@
 import { auth } from '../../auth';
 import { isAdminAuthBypassed } from '../../src/lib/adminAccess';
 import { isAllowedEmail } from '../../src/lib/allowedEmails';
+import { isSafeAvatarUrl } from '../../src/lib/avatarUrl';
 import { SaveConflictError } from '../../src/lib/blobStore';
 import {
   isOneOf,
@@ -353,8 +354,15 @@ export async function saveTabsAction(metas: TabMeta[]): Promise<Tab[]> {
   return tabs;
 }
 
-const HERO_REQUIRED_FIELDS = ['name', 'initials', 'role', 'profile'] as const;
+// Only the two fields the public page cannot render without. `profile` is
+// deliberately NOT here: it must be a string, but an empty one is a valid
+// choice — the owner may simply not want a profile paragraph, and requiring
+// it made "Publish hero" fail outright with an opaque redacted error.
+// `initials` is likewise not here any more: it's derived from `name` (see
+// src/lib/initials.ts) rather than typed, so the form no longer sends it.
+const HERO_REQUIRED_FIELDS = ['name', 'role'] as const;
 const HERO_OPTIONAL_FIELDS = [
+  'initials',
   'phone',
   'email',
   'linkedin',
@@ -373,8 +381,22 @@ function assertHeroShape(data: unknown): asserts data is Hero {
       throw new Error(`Invalid content shape: hero is missing ${field}`);
     }
   }
+  // Present and a string, but allowed to be empty — unlike the fields above.
+  if (typeof record.profile !== 'string') {
+    throw new Error('Invalid content shape: hero has a non-string profile');
+  }
   for (const field of HERO_OPTIONAL_FIELDS) {
     assertOptionalString(record[field], 'hero', field);
+  }
+  // Checked here as well as at render time: this is the save boundary, and
+  // an avatarUrl is the one hero field that becomes a live `src`.
+  assertOptionalString(record.avatarUrl, 'hero', 'avatarUrl');
+  if (
+    typeof record.avatarUrl === 'string' &&
+    record.avatarUrl.length > 0 &&
+    !isSafeAvatarUrl(record.avatarUrl)
+  ) {
+    throw new Error('Invalid content shape: hero has an unsafe avatarUrl');
   }
 }
 

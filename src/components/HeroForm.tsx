@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { saveHeroAction } from '../../app/admin/actions';
 import { toast } from '../lib/use-toast';
 import type { Hero } from '../types';
+import { AvatarField } from './AvatarField';
 
 interface Props {
   hero: Hero;
@@ -16,6 +17,10 @@ interface Props {
 // with nothing to add, remove, or reorder — so it gets a plain controlled
 // form instead of a Puck config, following the same save/toast/refresh
 // pattern PuckAdmin.handlePublish and TabManager.publish already use.
+// `initials` is absent by design: it's derived from `name` at render time
+// (src/lib/initials.ts), so there is nothing for the owner to type. An
+// omitted key here is also what lets a legacy stored value decay away on the
+// next save.
 const OPTIONAL_FIELDS = [
   'phone',
   'email',
@@ -23,13 +28,15 @@ const OPTIONAL_FIELDS = [
   'location',
   'dob',
   'credential',
+  'avatarUrl',
 ] as const;
 
 function toHero(fields: Record<string, string>): Hero {
   const hero: Hero = {
     name: fields.name ?? '',
-    initials: fields.initials ?? '',
     role: fields.role ?? '',
+    // Sent verbatim, empty string included: an empty profile is a valid
+    // choice, and dropping the key would make it look like a missing field.
     profile: fields.profile ?? '',
   };
   for (const field of OPTIONAL_FIELDS) {
@@ -43,7 +50,6 @@ export function HeroForm({ hero, onSaved }: Props) {
   const router = useRouter();
   const [fields, setFields] = useState<Record<string, string>>({
     name: hero.name,
-    initials: hero.initials,
     role: hero.role,
     phone: hero.phone ?? '',
     email: hero.email ?? '',
@@ -51,6 +57,7 @@ export function HeroForm({ hero, onSaved }: Props) {
     location: hero.location ?? '',
     dob: hero.dob ?? '',
     credential: hero.credential ?? '',
+    avatarUrl: hero.avatarUrl ?? '',
     profile: hero.profile,
   });
   const [saving, setSaving] = useState(false);
@@ -85,6 +92,12 @@ export function HeroForm({ hero, onSaved }: Props) {
         Nothing changes until you publish.
       </p>
 
+      <AvatarField
+        value={fields.avatarUrl ?? ''}
+        name={fields.name ?? ''}
+        onChange={(value) => setField('avatarUrl', value)}
+      />
+
       <div className="hero-form-grid">
         <label className="hero-form-field">
           <span>Name</span>
@@ -92,14 +105,6 @@ export function HeroForm({ hero, onSaved }: Props) {
             type="text"
             value={fields.name}
             onChange={(e) => setField('name', e.target.value)}
-          />
-        </label>
-        <label className="hero-form-field">
-          <span>Initials</span>
-          <input
-            type="text"
-            value={fields.initials}
-            onChange={(e) => setField('initials', e.target.value)}
           />
         </label>
         <label className="hero-form-field">

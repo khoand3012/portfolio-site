@@ -41,7 +41,8 @@ import { isAdminAuthBypassed } from './src/lib/adminAccess';
 const gate = auth((req) => {
   const isProtected =
     req.nextUrl.pathname.startsWith('/admin') ||
-    req.nextUrl.pathname.startsWith('/api/puck');
+    req.nextUrl.pathname.startsWith('/api/puck') ||
+    req.nextUrl.pathname.startsWith('/api/upload');
   if (isProtected && !req.auth) {
     const signInUrl = new URL('/api/auth/signin', req.nextUrl.origin);
     return Response.redirect(signInUrl);
@@ -72,5 +73,13 @@ export const config = {
   // is a non-optional catch-all ([...all], not [[...all]]), so a bare '/api/puck'
   // request 404s before any routing/matcher logic runs — there's no gap the way
   // there was for '/admin'.
-  matcher: ['/admin', '/admin/:path*', '/api/puck/:path*'],
+  //
+  // '/api/upload' IS listed bare, unlike '/api/puck': app/api/upload/route.ts
+  // is a plain route, not a catch-all, so '/api/upload' is exactly the path
+  // that resolves to it — a ':path*' entry alone would never match it. The
+  // route re-checks auth itself regardless; this is the routing-layer half.
+  //
+  // app/api/media is deliberately NOT gated: it serves the avatar to every
+  // visitor of the public page.
+  matcher: ['/admin', '/admin/:path*', '/api/puck/:path*', '/api/upload'],
 };

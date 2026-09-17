@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -11,7 +11,6 @@ import { HeroForm } from './HeroForm';
 
 const hero: Hero = {
   name: 'Truong Nam Nguyen',
-  initials: 'TNN',
   role: 'Programme Coordinator',
   phone: '+84 90 832 9797',
   email: 'truongnam307@gmail.com',
@@ -31,7 +30,6 @@ describe('HeroForm', () => {
   it('pre-fills every field from the current hero', () => {
     render(<HeroForm hero={hero} />);
     expect(screen.getByLabelText('Name')).toHaveValue('Truong Nam Nguyen');
-    expect(screen.getByLabelText('Initials')).toHaveValue('TNN');
     expect(screen.getByLabelText('Role')).toHaveValue('Programme Coordinator');
     expect(screen.getByLabelText('Date of birth')).toHaveValue('1 Jan 1995');
     expect(screen.getByLabelText('Credential')).toHaveValue(
@@ -40,6 +38,11 @@ describe('HeroForm', () => {
     expect(screen.getByLabelText('Profile')).toHaveValue(
       'Professional summary.',
     );
+  });
+
+  it('offers no Initials input — initials are derived from the name', () => {
+    render(<HeroForm hero={{ ...hero, initials: 'TNN' }} />);
+    expect(screen.queryByLabelText('Initials')).not.toBeInTheDocument();
   });
 
   it('publishes edited fields byte-for-byte, without rewording', async () => {
@@ -53,6 +56,23 @@ describe('HeroForm', () => {
       ...hero,
       dob: '2 Feb 1996',
     });
+  });
+
+  it('drops a legacy stored initials value rather than republishing it', async () => {
+    const user = userEvent.setup();
+    render(<HeroForm hero={{ ...hero, initials: 'TNN' }} />);
+    await user.click(screen.getByRole('button', { name: 'Publish hero' }));
+    const sent = vi.mocked(saveHeroAction).mock.calls[0]?.[0];
+    expect(sent?.initials).toBeUndefined();
+  });
+
+  it('publishes an emptied profile as an empty string, not a dropped field', async () => {
+    const user = userEvent.setup();
+    render(<HeroForm hero={hero} />);
+    await user.clear(screen.getByLabelText('Profile'));
+    await user.click(screen.getByRole('button', { name: 'Publish hero' }));
+    const sent = vi.mocked(saveHeroAction).mock.calls[0]?.[0];
+    expect(sent?.profile).toBe('');
   });
 
   it('sends optional fields cleared to empty as undefined, not empty strings', async () => {
@@ -74,5 +94,30 @@ describe('HeroForm', () => {
     await user.click(screen.getByRole('button', { name: 'Publish hero' }));
     expect(screen.getByLabelText('Name')).toHaveValue('Edited Name');
     expect(screen.getByRole('button', { name: 'Publish hero' })).toBeEnabled();
+  });
+
+  it('publishes an uploaded avatar URL with the rest of the hero', async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ url: '/api/media/abc-123.png' }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<HeroForm hero={hero} />);
+    const file = new File(['bytes'], 'me.png', { type: 'image/png' });
+    await user.upload(screen.getByLabelText('Avatar'), file);
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Replace photo' }),
+      ).toBeInTheDocument(),
+    );
+    await user.click(screen.getByRole('button', { name: 'Publish hero' }));
+    expect(saveHeroAction).toHaveBeenCalledWith({
+      ...hero,
+      avatarUrl: '/api/media/abc-123.png',
+    });
+    vi.unstubAllGlobals();
   });
 });
