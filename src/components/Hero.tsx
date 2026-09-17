@@ -1,3 +1,5 @@
+import { isSafeAvatarUrl } from '../lib/avatarUrl';
+import { deriveInitials } from '../lib/initials';
 import type { Hero as HeroData } from '../types';
 import { MetaItem } from './MetaItem';
 
@@ -17,6 +19,18 @@ export function Hero({ hero }: Props) {
     hero.location &&
     `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(hero.location)}`;
 
+  // Always derived, never read from the stored record: `initials` is no
+  // longer an editable field, so a value saved before that change would
+  // otherwise go stale the moment the owner corrected their name.
+  const initials = deriveInitials(hero.name);
+  // Re-checked at render as well as at the save boundary — this is the point
+  // where the value becomes a live `src`, and a document written before that
+  // guard existed has never been through it.
+  const avatarSrc =
+    hero.avatarUrl && isSafeAvatarUrl(hero.avatarUrl)
+      ? hero.avatarUrl
+      : undefined;
+
   return (
     <header className="hero">
       <div className="wrap">
@@ -27,7 +41,12 @@ export function Hero({ hero }: Props) {
             {hero.credential && <p className="credential">{hero.credential}</p>}
           </div>
           <div className="avatar" aria-hidden="true">
-            {hero.initials}
+            {avatarSrc ? (
+              /* biome-ignore lint/performance/noImgElement: avatarSrc is an admin-supplied URL (or a relative /api/media path); next/image would need remotePatterns configured first, matching Image.tsx's existing reasoning. */
+              <img className="avatar-image" src={avatarSrc} alt="" />
+            ) : (
+              initials
+            )}
           </div>
         </div>
         <div className="meta-row">

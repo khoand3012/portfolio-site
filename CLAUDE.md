@@ -155,7 +155,7 @@ feature request to act on explicitly, not a default.
 **Access** is gated by Google OAuth (Auth.js v5 / `next-auth@beta`,
 configured in `auth.ts` at the repo root) plus an email allow-list
 (`src/lib/allowedEmails.ts`, checked against the `ALLOWED_EMAILS` env var).
-This is enforced at five independent layers — each catches a different way
+This is enforced at six independent layers — each catches a different way
 the others could be bypassed, so don't "simplify" this down to fewer checks:
 
 1. Auth.js's `signIn` callback in `auth.ts` — rejects a non-allow-listed
@@ -175,8 +175,23 @@ the others could be bypassed, so don't "simplify" this down to fewer checks:
    every call, so even a request that never touches saved content still
    needs to be blocked before it reaches Puck's API, not just before it
    can write anything.
+6. `app/api/upload/route.ts` — re-checks auth before accepting any uploaded
+   bytes. A Route Handler can be POSTed to directly, and this one writes to
+   the media store, so it needs its own gate for the same reason point 4
+   does. It is also listed in `middleware.ts`'s matcher — and listed *bare*
+   (`'/api/upload'`, not `'/api/upload/:path*'`), because unlike `/api/puck`
+   it is a plain route rather than a catch-all, so the `:path*` form would
+   never match it. That matcher entry has a consequence worth knowing before
+   putting another fetch-driven route behind it: middleware answers an
+   unauthenticated request with `Response.redirect`, which is a **302**, and
+   a followed 302 both downgrades a POST to a GET and lands the caller on the
+   sign-in page as `200 OK` HTML — indistinguishable from success until JSON
+   parsing fails. `AvatarField` therefore calls `fetch` with
+   `redirect: 'manual'` and reports an `opaqueredirect` as an expired
+   sign-in. This path cannot be exercised locally with
+   `DISABLE_ADMIN_AUTH=true`, which swaps the whole middleware for a no-op.
 
-All five consult one shared predicate, `isAdminAuthBypassed()` in
+All six consult one shared predicate, `isAdminAuthBypassed()` in
 `src/lib/adminAccess.ts`, which opens the panel for local development. That
 is a shared *predicate*, not a shared wrapper — each layer still owns its own
 check, and point 4 above still holds for any new server action. The bypass
@@ -191,7 +206,7 @@ be dropped:
 - Without the `NODE_ENV` half, the variable leaking into Netlify's
   environment would open the deployed panel.
 
-At each of the five sites the bypass short-circuits **before** `auth()` is
+At each of the six sites the bypass short-circuits **before** `auth()` is
 called, never after. That ordering is deliberate: Auth.js throws when
 `AUTH_SECRET` is missing, which is exactly the state of a machine running with
 OAuth disabled, so a bypass checked after the `auth()` call would throw before
@@ -236,7 +251,49 @@ under `.role`; both are optional and plain text, never markup. Per this
 file's content-fidelity rule, the capability only: `content/portfolio.json`
 carries no `dob` or `credential` value, because those are the site owner's
 own facts to enter through `/admin`, not something to invent as a
-placeholder.
+placeholder — and for the same reason it carries no `avatarUrl`.
+
+**Only `name` and `role` are required.** `profile` must be a string but is
+allowed to be empty: requiring it made "Publish hero" fail outright, and
+because Next redacts server-side errors in production the owner saw only an
+opaque "an error occurred in the Server Components render" toast. If you add
+a field to `assertHeroShape`'s required list, be sure it is genuinely one the
+page cannot render without.
+
+**Initials are derived, not stored.** `src/lib/initials.ts`'s
+`deriveInitials()` takes them from `name` at render time, and `/admin` offers
+no input for them. `Hero.initials` survives in `src/types.ts` only so
+documents written before this change still validate — nothing reads it, and
+`HeroForm` omits it on save so it decays away. Don't reintroduce it as an
+editable field: it would go stale the moment the owner corrected their name.
+
+**Avatar upload.** `Hero.avatarUrl` is an uploaded image shown in place of
+those initials; `src/components/AvatarField.tsx` posts the raw file to
+`app/api/upload/route.ts`, which stores it and returns a relative
+`/api/media/<uuid>.<ext>` path that `app/api/media/[key]/route.ts` serves
+back. Four things here are load-bearing:
+
+- **Netlify Blobs, not R2.** `docs/superpowers/specs/2026-08-28-admin-media-
+  upload-design.md` specifies Cloudflare R2 for media — that spec covers the
+  *gallery* (images and video up to 500MB off a public CDN) and still stands
+  for it. One 5MB avatar does not justify five owner-provisioned env vars
+  that would have blocked the feature, so `src/lib/mediaStore.ts` uses Blobs,
+  with the same `MissingBlobsEnvironmentError` local-filesystem fallback
+  `blobStore.ts` uses. It is a *separate* module rather than a widening of
+  `ContentStore`, which is JSON-only by construction.
+- **A Route Handler, not a server action**, because Next caps server-action
+  bodies at 1MB by default and a phone photo exceeds that.
+- **No SVG in the allow-list** (`src/lib/mediaTypes.ts`). These bytes are
+  served from this site's own origin, so an uploaded SVG would be stored XSS.
+  The four permitted types are inert raster formats.
+- **The object key is a generated UUID**, never a user-supplied filename, so
+  it can carry no traversal characters — which is also what makes the serve
+  route's long `immutable` cache header safe.
+
+`src/lib/avatarUrl.ts`'s `isSafeAvatarUrl` guards the value at both the save
+boundary and at render. It exists rather than reusing `Image.tsx`'s
+`isSafeHttpUrl` because that helper runs `new URL(value)`, which *throws* on
+a relative path — every uploaded avatar would be rejected as unsafe.
 
 **Puck AI** (a chat panel for scaffolding/rearranging content) is wired via
 `@puckeditor/plugin-ai`/`@puckeditor/cloud-client`, and needs the site

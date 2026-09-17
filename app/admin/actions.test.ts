@@ -370,6 +370,17 @@ describe('saveHeroAction', () => {
     expect(savePortfolioContent).not.toHaveBeenCalled();
   });
 
+  it('saves a hero whose profile is empty', async () => {
+    const hero = { ...validHero, profile: '' };
+    await expect(saveHeroAction(hero)).resolves.toEqual(hero);
+    expect(savedDoc().hero.profile).toBe('');
+  });
+
+  it('saves a hero with no initials — they are derived from the name', async () => {
+    const hero = { name: 'Test', role: 'Role', profile: 'Profile' };
+    await expect(saveHeroAction(hero)).resolves.toEqual(hero);
+  });
+
   it('rejects a non-string optional field', async () => {
     await expect(
       saveHeroAction({ ...validHero, dob: 42 } as never),

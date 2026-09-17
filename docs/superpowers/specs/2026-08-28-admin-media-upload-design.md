@@ -3,6 +3,12 @@
 Status: draft, awaiting review
 Date: 2026-08-28 (revised 2026-09-05)
 
+> **Note (2026-09-17):** the *hero avatar* upload shipped separately and does
+> **not** use R2 — it stores one small image in Netlify Blobs via
+> `src/lib/mediaStore.ts`, served by `app/api/media`. Nothing in this spec is
+> a prerequisite for it. This spec still stands for the gallery's image and
+> video uploads, where the CDN and the 500MB ceiling are what R2 buys.
+
 ## Why
 
 The media URL fields in `puck.config.tsx` are plain `{ type: 'text' }` inputs
