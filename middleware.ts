@@ -42,7 +42,8 @@ const gate = auth((req) => {
   const isProtected =
     req.nextUrl.pathname.startsWith('/admin') ||
     req.nextUrl.pathname.startsWith('/api/puck') ||
-    req.nextUrl.pathname.startsWith('/api/upload');
+    req.nextUrl.pathname.startsWith('/api/upload') ||
+    req.nextUrl.pathname.startsWith('/api/gallery-upload');
   if (isProtected && !req.auth) {
     const signInUrl = new URL('/api/auth/signin', req.nextUrl.origin);
     return Response.redirect(signInUrl);
@@ -74,12 +75,23 @@ export const config = {
   // request 404s before any routing/matcher logic runs — there's no gap the way
   // there was for '/admin'.
   //
-  // '/api/upload' IS listed bare, unlike '/api/puck': app/api/upload/route.ts
-  // is a plain route, not a catch-all, so '/api/upload' is exactly the path
-  // that resolves to it — a ':path*' entry alone would never match it. The
-  // route re-checks auth itself regardless; this is the routing-layer half.
+  // '/api/upload' and '/api/gallery-upload' ARE listed bare, unlike
+  // '/api/puck': both are plain routes, not catch-alls, so those exact paths
+  // are what resolve to them — a ':path*' entry alone would never match
+  // either. Each route re-checks auth itself regardless; this is the
+  // routing-layer half.
+  //
+  // Note the gallery route is a SIBLING, not a child, of '/api/upload'
+  // precisely so this stays true: nesting it would have forced this entry to
+  // the ':path*' form and reopened the bare-path gap described above.
   //
   // app/api/media is deliberately NOT gated: it serves the avatar to every
   // visitor of the public page.
-  matcher: ['/admin', '/admin/:path*', '/api/puck/:path*', '/api/upload'],
+  matcher: [
+    '/admin',
+    '/admin/:path*',
+    '/api/puck/:path*',
+    '/api/upload',
+    '/api/gallery-upload',
+  ],
 };
