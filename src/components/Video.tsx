@@ -66,7 +66,9 @@ export function Video({ block, onOpen }: Props) {
     <figure className="media-figure">
       <div className="media-frame">
         <a
-          className="media-link"
+          className={
+            playsInOverlay ? 'media-link media-link-interactive' : 'media-link'
+          }
           href={block.url}
           target="_blank"
           rel="noopener"

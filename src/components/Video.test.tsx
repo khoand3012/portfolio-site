@@ -211,3 +211,26 @@ describe('Video', () => {
     expect(within(container).queryByRole('button')).toBeNull();
   });
 });
+
+// The hover scale rides on .media-link-interactive, not on .media-link, so
+// that a link tile rendered by the editor (no onOpen) doesn't get it — the
+// anchor itself exists in both paths.
+describe('Video hover-scale marker', () => {
+  it('marks a link tile interactive only when the overlay can play it', () => {
+    const { container: playable } = render(
+      <Video
+        block={{ type: 'video', mode: 'link', url: YOUTUBE }}
+        onOpen={() => {}}
+      />,
+    );
+    expect(playable.querySelector('.media-link-interactive')).not.toBeNull();
+
+    const { container: notPlayable } = render(
+      <Video
+        block={{ type: 'video', mode: 'link', url: 'https://v.example/x' }}
+        onOpen={() => {}}
+      />,
+    );
+    expect(notPlayable.querySelector('.media-link-interactive')).toBeNull();
+  });
+});

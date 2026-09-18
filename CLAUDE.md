@@ -344,7 +344,7 @@ allow-listed site owner has access at all.
 leaves.** Before it existed, `.media-image` carried `aspect-ratio: 4/3` while
 `.media-video` carried nothing, so a `<video>` fell back to the browser's
 300x150 default until its metadata loaded: in a `MediaGrid` at a 216px column
-a video tile measured 162px against the photos' 150px, captions fell out of
+the photos measured 162px against the video's 150px, captions fell out of
 line, and the row re-laid-out once the file responded. The frame now carries
 the ratio, `overflow: hidden` and the background for every variant — photo,
 video still, link tile, empty placeholder — so they are all the same height

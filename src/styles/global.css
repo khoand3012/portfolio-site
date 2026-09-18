@@ -902,12 +902,16 @@ footer::before {
   outline: 2px solid var(--color-accent-default);
   outline-offset: 2px;
 }
+/* Keyed on .media-link-INTERACTIVE, never on .media-link: a link tile keeps
+   its anchor in both render paths, so hanging the hover scale on the anchor's
+   own class would give the admin editor the effect too. Only the public path
+   adds the marker. */
 .media-frame-button:hover .media-image,
 .media-frame-button:hover .media-video,
 .media-frame-button:focus-visible .media-image,
 .media-frame-button:focus-visible .media-video,
-.media-link:hover .media-image,
-.media-link:focus-visible .media-image {
+.media-link-interactive:hover .media-image,
+.media-link-interactive:focus-visible .media-image {
   transform: scale(1.1);
 }
 
@@ -1047,8 +1051,8 @@ footer::before {
   .media-frame-button:hover .media-video,
   .media-frame-button:focus-visible .media-image,
   .media-frame-button:focus-visible .media-video,
-  .media-link:hover .media-image,
-  .media-link:focus-visible .media-image {
+  .media-link-interactive:hover .media-image,
+  .media-link-interactive:focus-visible .media-image {
     transform: none;
   }
 }

@@ -171,4 +171,20 @@ describe('the editor renders media tiles inert', () => {
       'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
     );
   });
+
+  // A link tile keeps its <a> in both paths, so the anchor's own class can't
+  // carry the hover scale — the editor would get it too. Only the marker
+  // class the public path adds may.
+  it('gives a video tile no hover-scale marker class', () => {
+    const renderFn = components.Video.render as AnyRender;
+    const { container } = render(
+      renderFn({
+        mode: 'link',
+        url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+        poster: '',
+        caption: '',
+      }),
+    );
+    expect(container.querySelector('.media-link-interactive')).toBeNull();
+  });
 });
