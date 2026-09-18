@@ -417,9 +417,12 @@ main {
   border-color: var(--color-accent-default);
 }
 
-/* Gallery */
+/* Gallery. The tile fills its .media-frame rather than sizing itself: the
+   frame owns the aspect ratio for every media variant, so a placeholder, a
+   photo and a video still are all exactly the same height. */
 .gallery-tile {
-  aspect-ratio: 4 / 3;
+  width: 100%;
+  height: 100%;
   border-radius: var(--radius-md);
   background: var(--color-bg-surface);
   border: 1px dashed var(--color-border-strong);
@@ -430,6 +433,7 @@ main {
   gap: var(--spacing-sm);
   color: var(--color-text-secondary);
   font-size: 13px;
+  text-align: center;
   transition:
     border-color 0.15s ease,
     color 0.15s ease;
@@ -837,23 +841,220 @@ footer::before {
   margin-right: var(--spacing-xs);
 }
 
+/* Media tiles.
+   .media-frame is the one element that decides how tall a tile is. Before it
+   existed, .media-image carried `aspect-ratio: 4/3` while .media-video
+   carried nothing, so a <video> fell back to the browser's 300x150 default
+   until its metadata loaded — a video tile in a grid rendered ~12px shorter
+   than the photos beside it and then re-laid-out once the file responded.
+   Putting the ratio (and the clipping) on the frame makes every variant the
+   same height, loaded or not. The clipping is also what lets the tile scale
+   on hover without spilling over its neighbouring grid cells.
+   Per CLAUDE.md, none of these classes carry outer spacing — the container
+   block owns all of it. */
 .media-figure {
   margin: 0;
+  /* A grid/flex item defaults to min-width:auto, which lets a wide intrinsic
+     image refuse to shrink below its own width and blow the track out. */
+  min-width: 0;
+}
+.media-frame {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--color-bg-surface);
 }
 .media-image,
 .media-video {
   width: 100%;
-  border-radius: var(--radius-md);
+  height: 100%;
   display: block;
-}
-.media-image {
-  aspect-ratio: 4 / 3;
   object-fit: cover;
+  transition: transform 0.25s ease;
 }
 .media-caption {
   font-size: 13px;
   color: var(--color-text-secondary);
   margin-top: var(--spacing-xs);
+}
+
+/* The two interactive forms of a tile. Both exist only on the public page:
+   puck.config.tsx renders Image/Video with no onOpen, so the editor gets a
+   plain .media-frame <div> and none of this. */
+.media-frame-button {
+  padding: 0;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  appearance: none;
+}
+.media-link {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.media-frame-button:focus-visible,
+.media-link:focus-visible {
+  outline: 2px solid var(--color-accent-default);
+  outline-offset: 2px;
+}
+/* Keyed on .media-link-INTERACTIVE, never on .media-link: a link tile keeps
+   its anchor in both render paths, so hanging the hover scale on the anchor's
+   own class would give the admin editor the effect too. Only the public path
+   adds the marker. */
+.media-frame-button:hover .media-image,
+.media-frame-button:hover .media-video,
+.media-frame-button:focus-visible .media-image,
+.media-frame-button:focus-visible .media-video,
+.media-link-interactive:hover .media-image,
+.media-link-interactive:focus-visible .media-image {
+  transform: scale(1.1);
+}
+
+/* Play affordance over a video tile's still frame. */
+.media-play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-full);
+  background: rgba(20, 50, 79, 0.72);
+  color: var(--color-text-inverse);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  transition: background 0.15s ease;
+}
+.media-play svg {
+  width: 24px;
+  height: 24px;
+  /* The triangle's own mass sits right of centre; nudge it back. */
+  margin-left: 2px;
+}
+.media-frame-button:hover .media-play,
+.media-link:hover .media-play {
+  background: var(--color-accent-default);
+}
+
+/* Lightbox. Public page only — mounted by TabbedContent, never by /admin. */
+.media-lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: rgba(11, 20, 31, 0.82);
+}
+.media-lightbox-content {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 301;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+  /* `width: max-content` is load-bearing. A fixed element positioned at
+     `left: 50%` has only the half-viewport to its right as available width,
+     and shrink-to-fit clamps to that — so a 16:9 embed asking for 80vw came
+     out square. max-content lets it ask for its real width; max-width still
+     caps it, and translate(-50%, -50%) does the centring. */
+  width: max-content;
+  max-width: 80vw;
+  /* 80vw alone still lets a portrait image run off the top and bottom. */
+  max-height: 90vh;
+}
+.media-lightbox-media {
+  display: block;
+  max-width: 100%;
+  /* Leaves room for the caption beneath within the 90vh content box. */
+  max-height: 80vh;
+  object-fit: contain;
+  border-radius: var(--radius-md);
+  background: var(--color-bg-inverse);
+}
+.media-lightbox-embed {
+  /* An iframe has no intrinsic ratio to contain, so give it one. */
+  width: 80vw;
+  height: min(45vw, 80vh);
+  border: 0;
+}
+.media-lightbox-caption {
+  margin: 0;
+  color: var(--color-text-inverse);
+  font-size: 14px;
+  text-align: center;
+  max-width: 70ch;
+}
+.media-lightbox-title-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.media-lightbox-close {
+  /* Pinned to the viewport, not to the content box: the content is only as
+     wide as its media, and at 90vh its top edge sits close enough to the top
+     of the screen that a button placed above it would be clipped off. */
+  position: fixed;
+  top: var(--spacing-md);
+  right: var(--spacing-md);
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-full);
+  background: var(--color-bg-inverse);
+  color: var(--color-text-inverse);
+  cursor: pointer;
+}
+.media-lightbox-close svg {
+  width: 18px;
+  height: 18px;
+}
+.media-lightbox-close:focus-visible {
+  outline: 2px solid var(--color-bg-page);
+  outline-offset: 2px;
+}
+
+/* Below the desktop breakpoint the preview takes the full viewport width. */
+@media (max-width: 940px) {
+  .media-lightbox-content {
+    max-width: 100vw;
+  }
+  .media-lightbox-embed {
+    width: 100vw;
+    height: min(56.25vw, 70vh);
+  }
+  .media-lightbox-close {
+    top: var(--spacing-sm);
+    right: var(--spacing-sm);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .media-image,
+  .media-video {
+    transition: none;
+  }
+  .media-frame-button:hover .media-image,
+  .media-frame-button:hover .media-video,
+  .media-frame-button:focus-visible .media-image,
+  .media-frame-button:focus-visible .media-video,
+  .media-link-interactive:hover .media-image,
+  .media-link-interactive:focus-visible .media-image {
+    transform: none;
+  }
 }
 
 /* Admin tab manager. Only ever rendered inside /admin, but it lives here

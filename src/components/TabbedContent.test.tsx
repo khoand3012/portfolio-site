@@ -32,3 +32,32 @@ describe('TabbedContent', () => {
     expect(document.getElementById('tab-b')).toHaveClass('active');
   });
 });
+
+describe('TabbedContent media lightbox', () => {
+  // The provider has to sit here rather than in BlockRenderer so one overlay
+  // serves every tab, and so it exists on the public page only.
+  it('opens a preview from a photo tile', async () => {
+    const user = userEvent.setup();
+    render(
+      <TabbedContent
+        tabs={[
+          {
+            slug: 'media',
+            label: 'Photos',
+            blocks: [
+              {
+                type: 'image',
+                src: 'https://cdn.example/a.jpg',
+                alt: 'A photo',
+                caption: 'On stage',
+              },
+            ],
+          },
+        ]}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: /view a photo/i }));
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+  });
+});
