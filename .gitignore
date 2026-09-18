@@ -22,3 +22,5 @@ deno.lock
 
 # Local stand-in for Netlify Blobs, used when NETLIFY is unset (plain `next dev`)
 .local-blobs/
+
+.vscode/
