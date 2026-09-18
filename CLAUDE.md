@@ -338,6 +338,77 @@ not a hard guarantee — the real backstop is the history snapshots described
 above (any bad edit is recoverable) plus the fact that only the
 allow-listed site owner has access at all.
 
+## Media tiles: the frame, the lightbox, and which path gets which
+
+**`.media-frame` owns tile height — don't put `aspect-ratio` back on the
+leaves.** Before it existed, `.media-image` carried `aspect-ratio: 4/3` while
+`.media-video` carried nothing, so a `<video>` fell back to the browser's
+300x150 default until its metadata loaded: in a `MediaGrid` at a 216px column
+a video tile measured 162px against the photos' 150px, captions fell out of
+line, and the row re-laid-out once the file responded. The frame now carries
+the ratio, `overflow: hidden` and the background for every variant — photo,
+video still, link tile, empty placeholder — so they are all the same height
+whether or not anything has loaded. The clipping is not incidental: it is
+what lets the tile's contents scale on hover without spilling over the
+neighbouring grid cells. Per the leaf-spacing rule above, none of the
+`.media-*` classes carry outer spacing; `min-width: 0` on `.media-figure` is
+a shrink guard, not spacing.
+
+**The lightbox is public-page-only, and `onOpen` is the seam.** `Image` and
+`Video` take an optional `onOpen`, and its *presence* is the whole mechanism:
+`BlockRenderer` (the public page's render path) supplies it,
+`puck.config.tsx` does not, so the editor gets an inert `<div>` frame with no
+hover scale, no click handler and no overlay. This is the same explicit
+dual-path split `Container.tsx` uses, deliberately chosen over sniffing
+Puck's editing state from a shared component. `MediaLightboxProvider` is
+mounted once in `TabbedContent` so one overlay serves every tab;
+`useMediaLightbox()` returns `null` outside it, which is what makes a tile
+rendered anywhere else inert by default. `puck.config.test.tsx` pins the
+editor's side of this — if you ever pass `onOpen` from the Puck config, that
+test fails, which is the point.
+
+A link-mode tile keeps its `<a href>` in both paths rather than becoming a
+button, so it still reaches the video with JavaScript off and stays keyboard
+reachable; when the overlay can play that URL the click handler suppresses
+the navigation instead.
+
+**`src/lib/videoEmbed.ts` builds embed URLs, it never forwards them.** A
+link-mode video plays inline in the overlay via a provider iframe. The
+security property is that `parseVideoEmbed` matches the hostname against an
+**exact** allow-list (never a suffix match — `endsWith('youtube.com')` also
+accepts the registerable `notyoutube.com`), extracts the id, validates it
+against `^[A-Za-z0-9_-]{11}$` for YouTube or `^\d+$` for Vimeo, and then
+*constructs* `https://www.youtube-nocookie.com/embed/<id>`. The owner's own
+string never becomes an iframe `src`, so nothing arbitrary can be framed even
+if it got past the save guard. Anything unrecognised returns `null` and the
+tile falls back to opening in a new tab. Keep the "never returns the input
+URL itself" test — it is the one that would catch a refactor that starts
+passing the URL through.
+
+This does **not** contradict `Video.tsx`'s "mode is an explicit stored
+choice, not sniffed from the URL" rule. `mode` still decides the only thing
+it ever decided: file (`embed`) versus page (`link`). The parser only asks
+which provider an already-declared link points at.
+
+**Video thumbnails before upload exists.** `videoPoster()` prefers the
+owner's `poster` field and otherwise derives YouTube's own
+`https://i.ytimg.com/vi/<id>/hqdefault.jpg` from the id it just validated —
+so a pasted YouTube link gets a real thumbnail with no upload and no new
+content field. Vimeo has no static thumbnail URL without an API call, so it
+falls back to the placeholder tile. This is the only third-party image
+request the public page makes, and it only fires for a YouTube link that has
+no poster of its own.
+
+**Overlay sizing has one non-obvious rule.** `.media-lightbox-content` needs
+`width: max-content`. A fixed element positioned at `left: 50%` has only the
+half-viewport to its right as available width, and shrink-to-fit clamps to
+that — which silently squashed a 16:9 embed asking for `80vw` into a square.
+`max-width` (80vw desktop, 100vw at the existing 940px breakpoint) still caps
+it and `translate(-50%, -50%)` does the centring. The close button is `fixed`
+to the viewport corner rather than the content box, because at 90vh the
+content's top edge is too close to the top of the screen for a button placed
+above it.
+
 ## Biome: what's excluded, and why
 
 `biome.json`'s `files.includes` excludes `**/out`, `**/.next`, and

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import type { Block } from '../types';
 import { BlockRenderer } from './BlockRenderer';
+import { MediaLightboxProvider } from './MediaLightbox';
 import { TabStrip } from './TabStrip';
 
 interface Tab {
@@ -19,7 +20,10 @@ export function TabbedContent({ tabs }: Props) {
   const [activeSlug, setActiveSlug] = useState(tabs[0]?.slug ?? '');
 
   return (
-    <>
+    // One overlay for every tab, mounted here rather than inside BlockRenderer
+    // so the editor — which renders Image/Video through puck.config.tsx, not
+    // through this component — never gets one.
+    <MediaLightboxProvider>
       {/* The strip owns its own horizontal scrolling and the arrows that go
           with it; this component stays responsible for which tab is active
           and for the panels below. */}
@@ -41,6 +45,6 @@ export function TabbedContent({ tabs }: Props) {
           ))}
         </div>
       </main>
-    </>
+    </MediaLightboxProvider>
   );
 }

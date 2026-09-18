@@ -137,3 +137,38 @@ describe("puck.config Container render (the editor's path)", () => {
     expect(box.className).toContain('layout-surface-card');
   });
 });
+
+// The hover-scale and click-to-preview behaviour belongs to the public page
+// only. The editor gets it by accident the moment puck.config's render starts
+// passing an onOpen handler, so pin the absence here rather than trusting the
+// two call sites to stay different.
+describe('the editor renders media tiles inert', () => {
+  it('gives an image tile no lightbox trigger', () => {
+    const renderFn = components.Image.render as AnyRender;
+    const { container } = render(
+      renderFn({
+        src: 'https://cdn.example/a.jpg',
+        alt: 'A photo',
+        caption: '',
+      }),
+    );
+    expect(container.querySelector('button')).toBeNull();
+  });
+
+  it('gives a video tile no lightbox trigger, and keeps its link navigating', () => {
+    const renderFn = components.Video.render as AnyRender;
+    const { container } = render(
+      renderFn({
+        mode: 'link',
+        url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+        poster: '',
+        caption: '',
+      }),
+    );
+    expect(container.querySelector('button')).toBeNull();
+    expect(container.querySelector('a')).toHaveAttribute(
+      'href',
+      'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    );
+  });
+});
