@@ -1404,3 +1404,55 @@ footer::before {
   color: var(--color-text-primary);
   margin: var(--spacing-xs) 0 0;
 }
+
+/* Gallery upload field. Rendered inside Puck's own field panel in /admin, so
+   it deliberately stays plain — Puck themes the surrounding panel, and this
+   only needs to lay its own controls out. Kept here with everything else:
+   this project keeps one stylesheet (see CLAUDE.md). */
+.media-upload-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+.media-upload-url {
+  width: 100%;
+  font: inherit;
+}
+.media-upload-label {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+/* The real file input is hidden behind the styled button, but stays in the
+   DOM and keeps its <label for> — that is what leaves it reachable by name
+   for assistive tech and for tests. */
+.media-upload-field input[type="file"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.media-upload-button {
+  font: inherit;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+.media-upload-button:disabled {
+  cursor: progress;
+  opacity: 0.7;
+}
+.media-upload-progress {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+.media-upload-error {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-accent-hover);
+}

@@ -28,6 +28,8 @@
     "vitest": "^2.1.9"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1135.0",
+    "@aws-sdk/lib-storage": "^3.1135.0",
     "@netlify/blobs": "^8.2.0",
     "@puckeditor/cloud-client": "^0.8.2",
     "@puckeditor/core": "^0.23.0",

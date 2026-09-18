@@ -188,3 +188,73 @@ describe('the editor renders media tiles inert', () => {
     expect(container.querySelector('.media-link-interactive')).toBeNull();
   });
 });
+
+describe('media fields upload as well as accept a pasted URL', () => {
+  it.each([
+    ['Image', 'src'],
+    ['Video', 'url'],
+    ['Video', 'poster'],
+  ])('%s.%s is an upload-or-paste field', (component, prop) => {
+    const fields = components[component].fields as Record<
+      string,
+      { type: string } | undefined
+    >;
+    expect(fields[prop]?.type).toBe('custom');
+  });
+
+  it('leaves the non-media fields as they were', () => {
+    const imageFields = components.Image.fields as Record<
+      string,
+      { type: string }
+    >;
+    expect(imageFields.alt?.type).toBe('text');
+    expect(imageFields.caption?.type).toBe('text');
+    expect(
+      (components.Video.fields as Record<string, { type: string }>).mode?.type,
+    ).toBe('select');
+  });
+});
+
+// Puck's custom field can only write its own prop, so the mode toggle is
+// reconciled here instead. Only an object key this app generated counts —
+// see isUploadedVideoUrl — so a pasted URL is never second-guessed.
+describe('uploading a video switches it to embed mode', () => {
+  const resolveData = components.Video.resolveData as (
+    data: { props: Record<string, unknown> },
+    params: { changed: Record<string, boolean> },
+  ) => { props: Record<string, unknown> };
+
+  const UPLOADED =
+    'https://pub-abc.r2.dev/media/0f8fad5b-d9cb-469f-a165-70867728950e.mp4';
+
+  it('flips mode to embed for an uploaded file', () => {
+    const result = resolveData(
+      { props: { mode: 'link', url: UPLOADED } },
+      { changed: { url: true } },
+    );
+    expect(result.props.mode).toBe('embed');
+  });
+
+  it('leaves a pasted provider URL as a link', () => {
+    const result = resolveData(
+      {
+        props: {
+          mode: 'link',
+          url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+        },
+      },
+      { changed: { url: true } },
+    );
+    expect(result.props.mode).toBe('link');
+  });
+
+  // Otherwise an owner who deliberately set a mode would have it overwritten
+  // every time Puck re-resolved the component.
+  it('does nothing when the url did not change', () => {
+    const result = resolveData(
+      { props: { mode: 'link', url: UPLOADED } },
+      { changed: { caption: true } },
+    );
+    expect(result.props.mode).toBe('link');
+  });
+});

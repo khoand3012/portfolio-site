@@ -28,8 +28,10 @@ import {
 import { Dates } from './src/components/Dates';
 import { Heading } from './src/components/Heading';
 import { Image } from './src/components/Image';
+import { MediaUploadField } from './src/components/MediaUploadField';
 import { Text } from './src/components/Text';
 import { Video } from './src/components/Video';
+import { isUploadedVideoUrl } from './src/lib/galleryMediaTypes';
 import {
   LAYOUT_ALIGN_OPTIONS,
   LAYOUT_COLUMN_OPTIONS,
@@ -130,6 +132,27 @@ const renderContainer = ({
     <Children className={containerFlowClassName(layout)} />
   </div>
 );
+
+// The three media props share one field definition rather than three copies.
+// `accept` drives both the picker's filter and the client-side size check.
+// The component lives in src/components so this file stays a config file.
+const mediaField = (accept: 'image' | 'video') =>
+  ({
+    type: 'custom' as const,
+    render: ({
+      value,
+      onChange,
+    }: {
+      value?: string;
+      onChange: (v: string) => void;
+    }) => (
+      <MediaUploadField
+        accept={accept}
+        value={value ?? ''}
+        onChange={onChange}
+      />
+    ),
+  }) as const;
 
 export const puckConfig: Config<PuckComponentProps> = {
   components: {
@@ -315,7 +338,7 @@ export const puckConfig: Config<PuckComponentProps> = {
     },
     Image: {
       fields: {
-        src: { type: 'text' },
+        src: mediaField('image'),
         alt: { type: 'text' },
         caption: { type: 'text' },
       },
@@ -334,11 +357,23 @@ export const puckConfig: Config<PuckComponentProps> = {
     Video: {
       fields: {
         mode: { type: 'select', options: VIDEO_MODE_OPTIONS },
-        url: { type: 'text' },
-        poster: { type: 'text' },
+        url: mediaField('video'),
+        poster: mediaField('image'),
         caption: { type: 'text' },
       },
       defaultProps: { mode: 'link', url: '', poster: '', caption: '' },
+      // Puck's custom field can only write the prop it is bound to, so the
+      // url→mode relationship is reconciled here rather than inside the
+      // field. Guarded on `changed.url` so an owner who deliberately picked a
+      // mode doesn't have it overwritten on every re-resolve, and on
+      // isUploadedVideoUrl so only an object key THIS APP generated counts —
+      // a pasted URL is never second-guessed. See the note in Video.tsx about
+      // why mode is stored rather than sniffed.
+      resolveData: (data, { changed }) => {
+        if (!changed.url) return data;
+        if (!isUploadedVideoUrl(String(data.props.url ?? ''))) return data;
+        return { ...data, props: { ...data.props, mode: 'embed' } };
+      },
       render: (props) => (
         <Video
           block={{
