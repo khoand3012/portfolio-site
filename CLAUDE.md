@@ -409,6 +409,97 @@ to the viewport corner rather than the content box, because at 90vh the
 content's top edge is too close to the top of the screen for a button placed
 above it.
 
+## Gallery uploads: three stores, two routes, one allow-list each
+
+`/admin`'s three media URL fields (`Image.src`, `Video.url`, `Video.poster`)
+take an uploaded file as well as a pasted URL. **Keep the paste path.** Some
+media should stay a link rather than be re-hosted — an existing YouTube video
+being the obvious case — so uploading is an addition to those fields, never a
+replacement.
+
+**There are now three storage modules, and they are not interchangeable:**
+
+| Module | Holds | Interface |
+|---|---|---|
+| `blobStore.ts` | page content (JSON) | `setJSON`/`get`, JSON by construction |
+| `mediaStore.ts` | the hero avatar, ≤5MB | `put(key, bytes: ArrayBuffer, …)` |
+| `r2Store.ts` | gallery media, ≤100MB | `uploadGalleryMedia(key, body: ReadableStream, …)` |
+
+The stream-vs-buffer split is the forcing difference, not a style choice:
+buffering a 100MB video into an `ArrayBuffer` inside a serverless function is
+exactly what `r2Store` exists to avoid, so `request.body` goes straight into
+`@aws-sdk/lib-storage`'s `Upload`. Don't "unify" these three.
+
+`r2Store` needs all five of `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`,
+`R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, `R2_PUBLIC_URL` — `isR2Configured()`
+is all-or-nothing on purpose, because a half-configured environment would
+build a client that fails at request time instead of falling back. With none
+of them set (local dev), `app/api/gallery-upload` stores through `mediaStore`
+and returns a relative `/api/media/<key>` path, so the upload button is
+exercisable without a bucket. The public URL is the **`r2.dev` development
+hostname**, deliberately: a custom domain requires the zone to live in the
+owner's own Cloudflare account. Switching later changes `R2_PUBLIC_URL` and
+nothing else.
+
+**`app/api/gallery-upload` is a SIBLING of `/api/upload`, not a child, and
+that matters twice.** The two differ in backend, size class, allow-list and
+return shape (an absolute CDN URL vs a relative path this site serves) — and
+nesting would have forced `middleware.ts`'s matcher entry from the bare
+`'/api/upload'` form to `':path*'`, reopening the bare-path gap that entry's
+comment exists to close. Both are listed bare. Each route re-checks auth
+itself; the matcher is only the routing-layer half.
+
+**Size is enforced on the stream**, counting bytes and erroring past the cap.
+The `Content-Length` check in front of it is a courtesy to an honest client:
+that header is client-supplied and a chunked request omits it entirely. Don't
+delete the stream-side check in favour of the header one.
+
+`src/lib/galleryMediaTypes.ts` is the gallery allow-list, separate from
+`mediaTypes.ts` (the avatar's). **SVG is absent** from both, for the same
+reason — it is an active document that can carry `<script>`. **QuickTime
+(`.mov`) is absent** for a different reason: not a security risk, it simply
+does not play reliably across browsers, so an iPhone recording has to be
+converted rather than silently becoming a Safari-only tile. As with the
+avatar, the stored extension is derived from the validated content type and
+the object key is a generated UUID — nothing client-supplied reaches it, and
+`X-File-Extension` (which the original spec designed) was dropped for exactly
+that reason.
+
+**The client uses `XMLHttpRequest`, and it has to.** `fetch` exposes no upload
+progress, and browser→server is the leg that takes the time on a large file.
+That brings back the expired-session trap this file documents for
+`AvatarField`, harder: **XHR follows redirects transparently and has no
+`redirect: 'manual'`**, so middleware's 302 to the sign-in page arrives as a
+`200 OK` of HTML. `galleryUploadClient.ts` discriminates on `xhr.responseURL`,
+which reflects the post-redirect URL — verified against a real redirect, not
+assumed. That is the XHR analogue of `AvatarField`'s `opaqueredirect` check;
+don't drop it, and don't switch this to `fetch` to "simplify".
+
+The route answers with newline-delimited JSON (`progress`, then `done` or
+`error`) rather than a plain JSON body, so both legs of the upload can be
+reported. **A `200` does not mean success here:** the status line goes out
+before the upload is attempted, so a failure can only be reported in-band,
+and the client treats a stream that ends without a `done` event as a failure.
+The server→R2 leg depends on Netlify streaming a response body, which only a
+real deploy exercises.
+
+**`Video.mode` is flipped by `resolveData`, not by the field.** A Puck custom
+field can only write the prop it is bound to, so the url→mode relationship
+lives in `puck.config.tsx`'s `resolveData`. It fires only for a URL matching
+`isUploadedVideoUrl` — one of *our own* generated object keys — which is what
+lets it coexist with `Video.tsx`'s rule that mode is stored, never sniffed:
+the question asked is "is this our upload?", not "does this look like a
+video?". It also **reverses itself**: replacing an upload with a pasted URL
+returns mode to `link`, because leaving it at `embed` would render a provider
+*page* URL inside a `<video>` element, which can never play. It reverses only
+a flip this code made, never a mode the owner chose. That asymmetry was a
+real bug, found by driving the editor rather than by the unit tests — the
+original case started from `link`, where doing nothing is accidentally right.
+
+Types, `puckAdapter.ts` and `assertBlocksShape` need **no** changes for
+uploads: an uploaded URL is the same optional string as a pasted one. That is
+why this feature is smaller than it looks.
+
 ## Biome: what's excluded, and why
 
 `biome.json`'s `files.includes` excludes `**/out`, `**/.next`, and

@@ -1,7 +1,51 @@
 # Design: Real image/video upload for the media admin fields
 
-Status: draft, awaiting review
-Date: 2026-08-28 (revised 2026-09-05)
+Status: **implemented 2026-09-18** (see the revision note below for where the
+shipped work departs from this document)
+Date: 2026-08-28 (revised 2026-09-05, 2026-09-18)
+
+> **Revision note (2026-09-18) — read this before the body.** The feature
+> shipped. Five things differ from what is described below, and the body is
+> left as written rather than rewritten, so the reasoning stays legible:
+>
+> 1. **The R2 module is `src/lib/r2Store.ts`, not `src/lib/mediaStore.ts`.**
+>    That filename was taken by the hero-avatar store (Netlify Blobs) which
+>    shipped first. The deeper reason they stayed separate is the interface:
+>    `mediaStore.put` takes an `ArrayBuffer`, and buffering a 100MB video in a
+>    serverless function is the thing streaming exists to avoid. `r2Store`
+>    takes a `ReadableStream`.
+> 2. **The route is `app/api/gallery-upload/route.ts`,** a sibling of
+>    `/api/upload` rather than a reuse of it — different backend, size class,
+>    allow-list and return shape. Nesting it under `/api/upload` would also
+>    have forced `middleware.ts`'s matcher entry from the bare form to
+>    `:path*`, reopening the bare-path gap documented there.
+> 3. **`X-File-Extension` was dropped.** `src/lib/mediaTypes.ts` had already
+>    rejected that indirection for the avatar — it buys nothing and adds a
+>    value that must itself be validated — and a six-entry allow-list makes
+>    the same argument. The extension comes from the validated content type.
+> 4. **Caps and formats: images 20MB, video 100MB, `video/mp4` and
+>    `video/webm` only** (not the 500MB the open questions proposed).
+>    QuickTime is excluded because it does not play reliably across browsers.
+>    Enforcement counts bytes *on the stream*; the `Content-Length` check in
+>    front of it is a courtesy to an honest client, since that header is
+>    client-supplied and a chunked request omits it.
+> 5. **The `mode` flip is resolved in Puck's `resolveData`,** not via an
+>    `onUploaded` callback — a custom field can only write its own prop. It
+>    fires only for an object key this app generated
+>    (`isUploadedVideoUrl`), so a pasted URL is never second-guessed and the
+>    "mode is stored, never sniffed" rule in `Video.tsx` still holds. It also
+>    reverses itself when an upload is replaced by a pasted URL, which the
+>    original one-way design would have left at `embed`.
+>
+> Two things the body leaves open are now settled: the public bucket URL is
+> the **`r2.dev` development hostname**, chosen deliberately by the site
+> owner (a custom domain needs a zone in their Cloudflare account, which
+> `duckdns.org` can never be); and **captions needed no work here**, as the
+> content-structure spec had already made them first-class.
+>
+> One thing the lightbox work (2026-09-18) closed for free: an uploaded video
+> needs no poster, because an `embed`-mode tile renders
+> `<video preload="metadata">` as its own still frame.
 
 > **Note (2026-09-17):** the *hero avatar* upload shipped separately and does
 > **not** use R2 — it stores one small image in Netlify Blobs via
