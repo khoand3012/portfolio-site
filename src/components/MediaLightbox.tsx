@@ -6,6 +6,7 @@ import {
   type ReactNode,
   useCallback,
   useContext,
+  useEffect,
   useRef,
   useState,
 } from 'react';
@@ -23,6 +24,36 @@ export function useMediaLightbox(): OpenLightbox | null {
   return useContext(LightboxContext);
 }
 
+/**
+ * The `autoplay` attribute alone is not enough here. It defers until enough
+ * data has buffered, which can fall outside the user-activation window the
+ * click opened, and a browser is then entitled to refuse. Asking the element
+ * to play as soon as it mounts — still inside that window — is the reliable
+ * form. A refusal is not an error worth surfacing: the player simply sits
+ * paused with its controls, which is a usable fallback, so the rejection is
+ * swallowed rather than left unhandled.
+ */
+function LightboxVideo({ src, poster }: { src: string; poster?: string }) {
+  const ref = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    ref.current?.play()?.catch(() => {});
+  }, []);
+
+  return (
+    // biome-ignore lint/a11y/useMediaCaption: caption text is optional site-owner content rendered below the player; no timed-track data exists for these files.
+    <video
+      ref={ref}
+      className="media-lightbox-media"
+      controls
+      autoPlay
+      preload="metadata"
+      poster={poster}
+      src={src}
+    />
+  );
+}
+
 function LightboxMedia({ item }: { item: LightboxItem }) {
   if (item.kind === 'image') {
     return (
@@ -32,17 +63,7 @@ function LightboxMedia({ item }: { item: LightboxItem }) {
   }
 
   if (item.kind === 'video') {
-    return (
-      // biome-ignore lint/a11y/useMediaCaption: caption text is optional site-owner content rendered below the player; no timed-track data exists for these files.
-      <video
-        className="media-lightbox-media"
-        controls
-        autoPlay
-        preload="metadata"
-        poster={item.poster}
-        src={item.src}
-      />
-    );
+    return <LightboxVideo src={item.src} poster={item.poster} />;
   }
 
   // embedUrl is built by parseVideoEmbed from a validated provider id — it is

@@ -1,6 +1,6 @@
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { LightboxItem } from '../lib/mediaTile';
 import { MediaLightboxProvider, useMediaLightbox } from './MediaLightbox';
 
@@ -120,5 +120,71 @@ describe('MediaLightbox', () => {
     }
     const { container } = render(<Probe />);
     expect(within(container).getByText('inert')).toBeInTheDocument();
+  });
+});
+
+// jsdom implements no media pipeline, so HTMLMediaElement.play is absent and
+// has to be stubbed. The behaviour under test is still ours: that opening the
+// overlay asks the element to play, rather than leaving it to the `autoplay`
+// attribute. Deleting that call is what makes this fail.
+describe('MediaLightbox autoplay', () => {
+  const VIDEO: LightboxItem = {
+    kind: 'video',
+    src: 'https://cdn.example/a.mp4',
+    caption: 'Keynote',
+  };
+
+  it('starts playing a video as soon as the overlay opens', async () => {
+    const play = vi.fn().mockResolvedValue(undefined);
+    const original = Object.getOwnPropertyDescriptor(
+      window.HTMLMediaElement.prototype,
+      'play',
+    );
+    window.HTMLMediaElement.prototype.play = play;
+    try {
+      renderWithLightbox(VIDEO, 'show-autoplay');
+      await userEvent.click(screen.getByText('show-autoplay'));
+      await screen.findByRole('dialog');
+      await waitFor(() => expect(play).toHaveBeenCalled());
+    } finally {
+      if (original) {
+        Object.defineProperty(
+          window.HTMLMediaElement.prototype,
+          'play',
+          original,
+        );
+      }
+    }
+  });
+
+  // A browser may still refuse (an unmuted autoplay policy, a codec it can't
+  // decode). That must not surface as an unhandled rejection; the player just
+  // sits paused with its controls, which is a usable fallback.
+  it('survives a browser refusing to play', async () => {
+    const play = vi.fn().mockRejectedValue(new DOMException('NotAllowedError'));
+    const original = Object.getOwnPropertyDescriptor(
+      window.HTMLMediaElement.prototype,
+      'play',
+    );
+    window.HTMLMediaElement.prototype.play = play;
+    const unhandled = vi.fn();
+    process.on('unhandledRejection', unhandled);
+    try {
+      renderWithLightbox(VIDEO, 'show-refused');
+      await userEvent.click(screen.getByText('show-refused'));
+      expect(await screen.findByRole('dialog')).toBeInTheDocument();
+      await waitFor(() => expect(play).toHaveBeenCalled());
+      await new Promise((r) => setTimeout(r, 50));
+      expect(unhandled).not.toHaveBeenCalled();
+    } finally {
+      process.off('unhandledRejection', unhandled);
+      if (original) {
+        Object.defineProperty(
+          window.HTMLMediaElement.prototype,
+          'play',
+          original,
+        );
+      }
+    }
   });
 });
