@@ -369,10 +369,20 @@ export const puckConfig: Config<PuckComponentProps> = {
       // isUploadedVideoUrl so only an object key THIS APP generated counts —
       // a pasted URL is never second-guessed. See the note in Video.tsx about
       // why mode is stored rather than sniffed.
-      resolveData: (data, { changed }) => {
+      resolveData: (data, { changed, lastData }) => {
         if (!changed.url) return data;
-        if (!isUploadedVideoUrl(String(data.props.url ?? ''))) return data;
-        return { ...data, props: { ...data.props, mode: 'embed' } };
+        if (isUploadedVideoUrl(String(data.props.url ?? ''))) {
+          return { ...data, props: { ...data.props, mode: 'embed' } };
+        }
+        // Reverse the flip above, but ONLY when the value being replaced was
+        // one of our own uploads — i.e. undo a mode this code chose, never a
+        // mode the owner chose. Without this, uploading a file and then
+        // pasting a YouTube URL over it leaves mode at 'embed', which renders
+        // a provider PAGE url inside a <video> element and can never play.
+        if (isUploadedVideoUrl(String(lastData?.props?.url ?? ''))) {
+          return { ...data, props: { ...data.props, mode: 'link' } };
+        }
+        return data;
       },
       render: (props) => (
         <Video

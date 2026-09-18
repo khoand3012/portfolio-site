@@ -221,7 +221,10 @@ describe('media fields upload as well as accept a pasted URL', () => {
 describe('uploading a video switches it to embed mode', () => {
   const resolveData = components.Video.resolveData as (
     data: { props: Record<string, unknown> },
-    params: { changed: Record<string, boolean> },
+    params: {
+      changed: Record<string, boolean>;
+      lastData?: { props: Record<string, unknown> } | null;
+    },
   ) => { props: Record<string, unknown> };
 
   const UPLOADED =
@@ -256,5 +259,36 @@ describe('uploading a video switches it to embed mode', () => {
       { changed: { caption: true } },
     );
     expect(result.props.mode).toBe('link');
+  });
+
+  // The sequence that matters in practice, and the one a link→embed-only
+  // test misses: upload a file (mode flips to embed), then change your mind
+  // and paste a YouTube URL over it. Left at embed, that renders a provider
+  // PAGE url in a <video> element, which can never play.
+  it('flips back to link when an uploaded file is replaced by a pasted URL', () => {
+    const result = resolveData(
+      {
+        props: {
+          mode: 'embed',
+          url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+        },
+      },
+      { changed: { url: true }, lastData: { props: { url: UPLOADED } } },
+    );
+    expect(result.props.mode).toBe('link');
+  });
+
+  // Only OUR OWN automatic flip is reversed. An owner who deliberately chose
+  // embed for a direct file URL they host elsewhere keeps that choice when
+  // they edit the URL.
+  it('leaves a deliberate embed choice alone when no upload was involved', () => {
+    const result = resolveData(
+      { props: { mode: 'embed', url: 'https://cdn.example/new.mp4' } },
+      {
+        changed: { url: true },
+        lastData: { props: { url: 'https://cdn.example/old.mp4' } },
+      },
+    );
+    expect(result.props.mode).toBe('embed');
   });
 });
